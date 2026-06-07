@@ -4,7 +4,7 @@ on:
   schedule:
     # GitHub cron memakai UTC.
     # Ini jalan setiap 30 menit.
-    - cron: "7,37 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
