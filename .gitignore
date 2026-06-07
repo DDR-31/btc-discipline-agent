@@ -3,3 +3,5 @@
 __pycache__/
 state.json
 *.py~
+test_tc_private.py
+test_tc_orders.py
