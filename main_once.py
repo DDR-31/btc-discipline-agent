@@ -1,17 +1,25 @@
 import os
 from datetime import datetime, timezone
 
+import ccxt
+import pandas as pd
 import requests
 import yaml
-import pandas as pd
-import ccxt
+
 
 CONFIG_FILE = "config_git.yaml"
 
-TRADING_FORBIDDEN = True
 
+# ============================================================
+# Safety guard
+# ============================================================
 
 def enforce_no_trading(config):
+    """
+    Hard safety gate.
+    Bot ini tidak boleh melakukan trading, cancel order, atau withdrawal.
+    Kalau config salah di-set, script langsung berhenti.
+    """
     safety = config.get("safety", {})
 
     if safety.get("allow_trading", False):
@@ -23,6 +31,10 @@ def enforce_no_trading(config):
     if safety.get("allow_order_cancel", False):
         raise RuntimeError("Safety violation: allow_order_cancel must remain false.")
 
+
+# ============================================================
+# Config and environment
+# ============================================================
 
 def load_config():
     with open(CONFIG_FILE, "r", encoding="utf-8") as file:
@@ -36,20 +48,37 @@ def get_required_env(name):
     return value
 
 
+# ============================================================
+# Telegram
+# ============================================================
+
 def send_telegram(message):
     bot_token = get_required_env("TELEGRAM_BOT_TOKEN")
     chat_id = get_required_env("TELEGRAM_CHAT_ID")
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": message}
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+    }
 
     response = requests.post(url, json=payload, timeout=25)
+
+    print(f"Telegram status code: {response.status_code}")
+    print(f"Telegram response: {response.text}")
+
     if not response.ok:
         raise RuntimeError(f"Telegram error: {response.text}")
+
+
+# ============================================================
+# Tokocrypto exchange builder
+# ============================================================
 
 def build_tokocrypto_exchange(private=False):
     params = {
         "enableRateLimit": True,
+        "timeout": 12000,
     }
 
     if private:
@@ -63,13 +92,42 @@ def build_tokocrypto_exchange(private=False):
         params["secret"] = api_secret
 
     return ccxt.tokocrypto(params)
-    
-def get_24h_ticker(symbol):
+
+
+# ============================================================
+# Market data
+# ============================================================
+
+def get_tokocrypto_price_via_ccxt(symbol):
     """
-    Price source: CoinGecko.
-    We do NOT use ccxt.tokocrypto.fetch_ticker because it routes to api.binance.com
-    and may timeout from WSL/GitHub Actions.
+    Coba ambil harga BTC/USDT dari Tokocrypto via CCXT.
+    Catatan: di environment kamu, ccxt.tokocrypto.fetch_ticker()
+    pernah route ke api.binance.com dan timeout. Karena itu fungsi ini
+    wajib dibungkus try/except oleh caller.
     """
+    exchange = build_tokocrypto_exchange(private=False)
+    ticker = exchange.fetch_ticker(symbol)
+
+    last = ticker.get("last")
+    high = ticker.get("high") or last
+    low = ticker.get("low") or last
+    percentage = ticker.get("percentage") or 0
+    volume = ticker.get("baseVolume") or 0
+
+    if last is None:
+        raise RuntimeError(f"Tokocrypto ticker missing last price: {ticker}")
+
+    return {
+        "price": float(last),
+        "change_pct_24h": float(percentage),
+        "high_24h": float(high),
+        "low_24h": float(low),
+        "volume": float(volume),
+        "source": "Tokocrypto via CCXT",
+    }
+
+
+def get_coingecko_price():
     url = (
         "https://api.coingecko.com/api/v3/simple/price"
         "?ids=bitcoin"
@@ -88,14 +146,31 @@ def get_24h_ticker(symbol):
         "high_24h": price,
         "low_24h": price,
         "volume": 0,
-        "source": "CoinGecko",
+        "source": "CoinGecko fallback",
     }
+
+
+def get_24h_ticker(symbol):
+    """
+    Primary: Tokocrypto price.
+    Fallback: CoinGecko.
+
+    Kita tetap coba Tokocrypto dulu karena kamu memakai Tokocrypto.
+    Tapi karena CCXT Tokocrypto public ticker di WSL kamu pernah timeout
+    ke api.binance.com, fallback CoinGecko wajib.
+    """
+    try:
+        return get_tokocrypto_price_via_ccxt("BTC/USDT")
+    except Exception as error:
+        print(f"[WARN] Tokocrypto price failed, fallback to CoinGecko: {error}")
+
+    return get_coingecko_price()
 
 
 def get_daily_klines(symbol, days=30):
     """
-    Daily price source: CoinGecko.
-    This avoids ccxt.tokocrypto OHLCV/ticker routing issues.
+    Untuk historical daily data, kita pakai CoinGecko agar stabil.
+    Tokocrypto/CCXT OHLCV bisa bermasalah karena routing endpoint.
     """
     url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
     params = {
@@ -121,6 +196,11 @@ def get_daily_klines(symbol, days=30):
     df = pd.DataFrame(rows)
     return df.tail(days).reset_index(drop=True)
 
+
+# ============================================================
+# Tokocrypto read-only private data
+# ============================================================
+
 def fetch_tokocrypto_portfolio():
     """
     Read-only portfolio fetch.
@@ -129,15 +209,58 @@ def fetch_tokocrypto_portfolio():
     exchange = build_tokocrypto_exchange(private=True)
     balance = exchange.fetch_balance()
 
-    btc_total = float(balance.get("BTC", {}).get("total") or 0)
-    usdt_total = float(balance.get("USDT", {}).get("total") or 0)
+    btc_info = balance.get("BTC", {})
+    usdt_info = balance.get("USDT", {})
+
+    btc_free = float(btc_info.get("free") or 0)
+    btc_used = float(btc_info.get("used") or 0)
+    btc_total = float(btc_info.get("total") or 0)
+
+    usdt_free = float(usdt_info.get("free") or 0)
+    usdt_used = float(usdt_info.get("used") or 0)
+    usdt_total = float(usdt_info.get("total") or 0)
 
     return {
-        "btc": btc_total,
-        "usdt": usdt_total,
+        "btc_free": btc_free,
+        "btc_used": btc_used,
+        "btc_total": btc_total,
+        "usdt_free": usdt_free,
+        "usdt_used": usdt_used,
+        "usdt_total": usdt_total,
         "source": "Tokocrypto private read-only",
     }
 
+
+def fetch_tokocrypto_open_orders():
+    """
+    Read-only open order fetch.
+    Tidak cancel order.
+    Tidak place order.
+    """
+    try:
+        exchange = build_tokocrypto_exchange(private=True)
+        orders = exchange.fetch_open_orders("BTC/USDT")
+
+        simplified = []
+        for order in orders:
+            simplified.append({
+                "side": order.get("side"),
+                "type": order.get("type"),
+                "price": order.get("price"),
+                "amount": order.get("amount"),
+                "status": order.get("status"),
+            })
+
+        return simplified
+
+    except Exception as error:
+        print(f"[WARN] Tokocrypto open orders failed: {error}")
+        return []
+
+
+# ============================================================
+# Market context
+# ============================================================
 
 def calculate_market_context(ticker, daily):
     price = ticker["price"]
@@ -189,6 +312,10 @@ def calculate_market_context(ticker, daily):
     }
 
 
+# ============================================================
+# Portfolio calculation
+# ============================================================
+
 def calculate_portfolio(config, price):
     data_sources = config.get("data_sources", {})
     use_private_balance = data_sources.get("use_tokocrypto_private_balance", False)
@@ -196,17 +323,38 @@ def calculate_portfolio(config, price):
     if use_private_balance:
         try:
             remote = fetch_tokocrypto_portfolio()
-            usdt = float(remote["usdt"])
-            btc = float(remote["btc"])
+
+            btc = float(remote["btc_total"])
+            usdt = float(remote["usdt_total"])
+
+            btc_free = float(remote["btc_free"])
+            btc_used = float(remote["btc_used"])
+            usdt_free = float(remote["usdt_free"])
+            usdt_used = float(remote["usdt_used"])
+
             portfolio_source = remote["source"]
+
         except Exception as error:
             print(f"[WARN] Tokocrypto balance failed, fallback to config: {error}")
+
             usdt = float(config["portfolio"]["usdt"])
             btc = float(config["portfolio"]["btc"])
+
+            btc_free = btc
+            btc_used = 0
+            usdt_free = usdt
+            usdt_used = 0
+
             portfolio_source = "config_git.yaml fallback"
     else:
         usdt = float(config["portfolio"]["usdt"])
         btc = float(config["portfolio"]["btc"])
+
+        btc_free = btc
+        btc_used = 0
+        usdt_free = usdt
+        usdt_used = 0
+
         portfolio_source = "config_git.yaml"
 
     btc_value = btc * price
@@ -217,6 +365,10 @@ def calculate_portfolio(config, price):
     return {
         "usdt": usdt,
         "btc": btc,
+        "btc_free": btc_free,
+        "btc_used": btc_used,
+        "usdt_free": usdt_free,
+        "usdt_used": usdt_used,
         "btc_value": btc_value,
         "total_value": total_value,
         "btc_pct": btc_pct,
@@ -224,128 +376,10 @@ def calculate_portfolio(config, price):
         "source": portfolio_source,
     }
 
-def fetch_tokocrypto_open_orders():
-    try:
-        exchange = build_tokocrypto_exchange(private=True)
-        orders = exchange.fetch_open_orders("BTC/USDT")
 
-        simplified = []
-        for order in orders:
-            simplified.append({
-                "side": order.get("side"),
-                "type": order.get("type"),
-                "price": order.get("price"),
-                "amount": order.get("amount"),
-                "status": order.get("status"),
-            })
-
-        return simplified
-
-    except Exception as error:
-        print(f"[WARN] Tokocrypto open orders failed: {error}")
-        return []
-
-def build_rule_summary_for_llm(market, portfolio, decision, open_orders):
-    return {
-        "market": {
-            "price": market["price"],
-            "source": market.get("source"),
-            "regime": market["regime"],
-            "change_24h": market["change_24h"],
-            "change_7d": market["change_7d"],
-            "change_30d": market["change_30d"],
-            "from_7d_high": market["from_7d_high"],
-            "ma_7": market["ma_7"],
-            "ma_20": market["ma_20"],
-        },
-        "portfolio": {
-            "btc_pct": portfolio["btc_pct"],
-            "usdt_pct": portfolio["usdt_pct"],
-            "total_value": portfolio["total_value"],
-            "source": portfolio.get("source"),
-        },
-        "decision": decision,
-        "open_orders": open_orders[:5],
-    }
-
-
-def generate_gemini_explanation(config, market, portfolio, decision, open_orders):
-    llm_cfg = config.get("llm", {})
-    if not llm_cfg.get("enabled", False):
-        return ""
-
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        return ""
-
-    model = llm_cfg.get("model", "gemini-2.5-flash-lite")
-    max_output_tokens = int(llm_cfg.get("max_output_tokens", 300))
-    temperature = float(llm_cfg.get("temperature", 0.2))
-
-    context = build_rule_summary_for_llm(market, portfolio, decision, open_orders)
-
-    prompt = f"""
-You are a crypto decision-support explainer.
-You are NOT allowed to recommend auto-trading.
-You must respect the rule-engine signal.
-Do not override the signal.
-Do not tell the user to all-in.
-Do not suggest leverage, futures, margin, or high-risk behavior.
-
-Explain the following BTC/USDT decision in Indonesian, concise but clear.
-Focus on risk, position sizing, and mental discipline.
-
-Data:
-{context}
-
-Output format:
-AI Explanation:
-- Market:
-- Portfolio:
-- Action:
-- Mental note:
-"""
-
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent?key={api_key}"
-    )
-
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_output_tokens,
-        },
-    }
-
-    try:
-        response = requests.post(url, json=payload, timeout=30)
-        if not response.ok:
-            print(f"[WARN] Gemini error: {response.status_code} {response.text}")
-            return ""
-
-        data = response.json()
-        candidates = data.get("candidates", [])
-        if not candidates:
-            return ""
-
-        parts = candidates[0].get("content", {}).get("parts", [])
-        if not parts:
-            return ""
-
-        return parts[0].get("text", "").strip()
-
-    except Exception as error:
-        print(f"[WARN] Gemini failed: {error}")
-        return ""
-
+# ============================================================
+# Decision engine
+# ============================================================
 
 def decide_signal(config, market, portfolio):
     risk = config["risk"]
@@ -358,7 +392,7 @@ def decide_signal(config, market, portfolio):
     reserve = config["portfolio"]["emergency_usdt_reserve"]
 
     btc_pct = portfolio["btc_pct"]
-    available_usdt_after_reserve = max(0, portfolio["usdt"] - reserve)
+    available_usdt_after_reserve = max(0, portfolio["usdt_free"] - reserve)
 
     if mental["state"] == "panic" and strategy["no_trade_when_panic"]:
         return {
@@ -378,7 +412,10 @@ def decide_signal(config, market, portfolio):
         return {
             "signal": "HOLD / TOO MUCH BTC",
             "action_usdt": 0,
-            "reason": f"Alokasi BTC sudah {btc_pct:.1f}%, mendekati/di atas batas target {target_max}%. Jangan tambah BTC.",
+            "reason": (
+                f"Alokasi BTC sudah {btc_pct:.1f}%, mendekati/di atas batas target "
+                f"{target_max}%. Jangan tambah BTC."
+            ),
         }
 
     if market["change_24h"] <= risk["dump_24h_pct"]:
@@ -386,6 +423,16 @@ def decide_signal(config, market, portfolio):
             "signal": "WAIT / NO PANIC",
             "action_usdt": 0,
             "reason": "BTC sedang dump harian. Jangan langsung tangkap pisau jatuh. Tunggu stabilisasi.",
+        }
+
+    if portfolio["usdt_used"] > 0:
+        return {
+            "signal": "HOLD / OPEN ORDERS ACTIVE",
+            "action_usdt": 0,
+            "reason": (
+                f"Ada {portfolio['usdt_used']:.2f} USDT yang sudah terkunci di open buy orders. "
+                f"Jangan tambah manual agar tidak dobel entry."
+            ),
         }
 
     if (
@@ -452,6 +499,10 @@ def decide_signal(config, market, portfolio):
     }
 
 
+# ============================================================
+# GitHub repo reminder
+# ============================================================
+
 def get_repo_activity_info():
     repo = os.getenv("GITHUB_REPOSITORY")
     if not repo:
@@ -510,7 +561,7 @@ def build_repo_reminder(config):
         return (
             f"\n\nGitHub repo reminder: CRITICAL. "
             f"Repo terakhir update {days} hari lalu ({last_date}). "
-            f"Segera buat commit kecil agar scheduled workflow tidak mendekati disable 60 hari."
+            f"Segera buat commit kecil agar workflow tidak mendekati disable 60 hari."
         )
 
     if days >= remind_after:
@@ -520,6 +571,120 @@ def build_repo_reminder(config):
         )
 
     return ""
+
+
+# ============================================================
+# Gemini explanation
+# ============================================================
+
+def build_rule_summary_for_llm(market, portfolio, decision, open_orders):
+    return {
+        "market": {
+            "price": market["price"],
+            "source": market.get("source"),
+            "regime": market["regime"],
+            "change_24h": market["change_24h"],
+            "change_7d": market["change_7d"],
+            "change_30d": market["change_30d"],
+            "from_7d_high": market["from_7d_high"],
+            "ma_7": market["ma_7"],
+            "ma_20": market["ma_20"],
+        },
+        "portfolio": {
+            "btc_pct": portfolio["btc_pct"],
+            "usdt_pct": portfolio["usdt_pct"],
+            "total_value": portfolio["total_value"],
+            "usdt_free": portfolio["usdt_free"],
+            "usdt_used": portfolio["usdt_used"],
+            "source": portfolio.get("source"),
+        },
+        "decision": decision,
+        "open_orders": open_orders[:5],
+    }
+
+
+def generate_gemini_explanation(config, market, portfolio, decision, open_orders):
+    llm_cfg = config.get("llm", {})
+    if not llm_cfg.get("enabled", False):
+        return ""
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return ""
+
+    model = llm_cfg.get("model", "gemini-2.5-flash-lite")
+    max_output_tokens = int(llm_cfg.get("max_output_tokens", 300))
+    temperature = float(llm_cfg.get("temperature", 0.2))
+
+    context = build_rule_summary_for_llm(market, portfolio, decision, open_orders)
+
+    prompt = f"""
+You are a crypto decision-support explainer.
+You are NOT allowed to recommend auto-trading.
+You must respect the rule-engine signal.
+Do not override the signal.
+Do not tell the user to all-in.
+Do not suggest leverage, futures, margin, or high-risk behavior.
+
+Explain the following BTC/USDT decision in Indonesian, concise but clear.
+Focus on risk, position sizing, and mental discipline.
+
+Data:
+{context}
+
+Output format:
+AI Explanation:
+- Market:
+- Portfolio:
+- Action:
+- Mental note:
+"""
+
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent?key={api_key}"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_output_tokens,
+        },
+    }
+
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+
+        if not response.ok:
+            print(f"[WARN] Gemini error: {response.status_code} {response.text}")
+            return ""
+
+        data = response.json()
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return ""
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            return ""
+
+        return parts[0].get("text", "").strip()
+
+    except Exception as error:
+        print(f"[WARN] Gemini failed: {error}")
+        return ""
+
+
+# ============================================================
+# Message formatting
+# ============================================================
 
 def format_open_orders(open_orders):
     if not open_orders:
@@ -536,9 +701,10 @@ def format_open_orders(open_orders):
 
     return "\n".join(lines)
 
-def build_message(config, market, portfolio, decision,
-                  open_orders=None, ai_explanation=""):
+
+def build_message(config, market, portfolio, decision, open_orders=None, ai_explanation=""):
     repo_reminder = build_repo_reminder(config)
+    open_orders_text = format_open_orders(open_orders or [])
 
     return (
         f"BTC Discipline Agent\n\n"
@@ -554,19 +720,28 @@ def build_message(config, market, portfolio, decision,
         f"Portfolio:\n"
         f"Source: {portfolio.get('source', 'unknown')}\n"
         f"BTC: {portfolio['btc_pct']:.1f}% | USDT: {portfolio['usdt_pct']:.1f}%\n"
-        f"Total: {portfolio['total_value']:.2f} USDT\n\n"
+        f"BTC total: {portfolio['btc']:.8f}\n"
+        f"USDT free: {portfolio['usdt_free']:.2f}\n"
+        f"USDT used/open orders: {portfolio['usdt_used']:.2f}\n"
+        f"USDT total: {portfolio['usdt']:.2f}\n"
+        f"Total value: {portfolio['total_value']:.2f} USDT\n\n"
+        f"{open_orders_text}\n\n"
         f"Signal: {decision['signal']}\n"
         f"Recommended action: {decision['action_usdt']:.2f} USDT\n"
         f"Reason: {decision['reason']}\n\n"
         f"Mental rule: jangan FOMO, jangan revenge trade."
         f"{repo_reminder}"
-        f"\n\nOpen orders: {len(open_orders or [])}"
-        f"{repo_reminder}"
         f"\n\n{ai_explanation if ai_explanation else ''}"
     )
 
 
+# ============================================================
+# Main
+# ============================================================
+
 def main():
+    print("BTC Discipline Agent started")
+
     config = load_config()
     enforce_no_trading(config)
 
@@ -599,6 +774,9 @@ def main():
     )
 
     send_telegram(message)
+
+    print("BTC Discipline Agent finished")
+
 
 if __name__ == "__main__":
     main()
