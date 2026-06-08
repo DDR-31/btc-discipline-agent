@@ -1,0 +1,58 @@
+symbol: BTCUSDT
+
+portfolio:
+  usdt: 270.35
+  btc: 0.00067
+  target_btc_min_pct: 25
+  target_btc_max_pct: 40
+  max_single_buy_usdt: 40
+  emergency_usdt_reserve: 150
+
+mental:
+  state: calm
+  max_alerts_per_day: 6
+
+risk:
+  pump_24h_pct: 4
+  dump_24h_pct: -5
+  dip_from_7d_high_pct: -8
+  deep_dip_from_7d_high_pct: -15
+  near_7d_low_pct: 2
+  confirmation_above_ma_pct: 1.5
+
+alert_policy:
+  send_every_run: true
+  send_on_signal_change: true
+  send_on_action: true
+  heartbeat_hours:
+    - 0
+    - 12
+  significant_price_change_pct: 3
+
+strategy:
+  allow_confirmation_buy: true
+  allow_dip_buy: true
+  no_trade_when_panic: true
+
+github_repo_health:
+  remind_after_days: 55
+  critical_after_days: 57
+
+data_sources:
+  use_tokocrypto_public_price: true
+  use_tokocrypto_private_balance: true
+  use_tokocrypto_open_orders: true
+  fallback_to_coingecko: true
+
+safety:
+  allow_trading: false
+  allow_withdrawal: false
+  allow_order_cancel: false
+
+llm:
+  enabled: true
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  max_output_tokens: 300
+  temperature: 0.2
+  fallback_to_rule_message: true
