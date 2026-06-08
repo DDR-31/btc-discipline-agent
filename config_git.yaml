@@ -44,6 +44,30 @@ data_sources:
   use_tokocrypto_open_orders: false
   fallback_to_coingecko: true
 
+manual_open_orders:
+  enabled: true
+  orders:
+    - side: buy
+      type: limit
+      price: 58000
+      amount: 0.00051
+      allocated_usdt: 29.58
+      status: open
+
+    - side: buy
+      type: limit
+      price: 61000
+      amount: 0.00040
+      allocated_usdt: 24.40
+      status: open
+
+    - side: buy
+      type: limit
+      price: 60000
+      amount: 0.00050
+      allocated_usdt: 30.00
+      status: open
+
 safety:
   allow_trading: false
   allow_withdrawal: false
@@ -52,15 +76,16 @@ safety:
 llm:
   enabled: true
   provider: gemini
+  output_language: english
 
   default_model: gemini-2.5-flash
   deep_model: gemini-2.5-pro
   fallback_model: gemini-2.5-flash-lite
   grounding_model: gemini-2.5-flash
 
-  max_output_tokens: 850
+  max_output_tokens: 500
   deep_max_output_tokens: 1000
-  fallback_max_output_tokens: 500
+  fallback_max_output_tokens: 300
   grounding_max_output_tokens: 1000
 
   temperature: 0.2

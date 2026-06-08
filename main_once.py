@@ -368,14 +368,30 @@ def calculate_portfolio(config, price):
         usdt = float(config["portfolio"]["usdt"])
         btc = float(config["portfolio"]["btc"])
 
+        manual_orders_cfg = config.get("manual_open_orders", {})
+        manual_orders_enabled = manual_orders_cfg.get("enabled", False)
+        manual_orders = manual_orders_cfg.get("orders", []) if manual_orders_enabled else []
+
+        manual_usdt_used = 0.0
+        for order in manual_orders:
+            if order.get("status") == "open" and order.get("side") == "buy":
+                manual_usdt_used += float(order.get("allocated_usdt", 0) or 0)
+
         btc_free = btc
         btc_used = 0
-        usdt_free = usdt
-        usdt_used = 0
+        usdt_used = manual_usdt_used
+        usdt_free = max(usdt - usdt_used, 0)
 
-        portfolio_source = "config_git.yaml"
-        #portfolio_error = "Tokocrypto private balance disabled in config_git.yaml"
-        portfolio_error = "Tokocrypto private balance disabled in GitHub mode; using config portfolio."
+        if manual_orders_enabled and manual_usdt_used > 0:
+            portfolio_source = "config_git.yaml + manual open orders"
+            portfolio_error = (
+                "Tokocrypto private balance disabled in GitHub mode; "
+                "using config portfolio and manual open orders."
+            )
+        else:
+            portfolio_source = "config_git.yaml"
+            #portfolio_error = "Tokocrypto private balance disabled in config_git.yaml"
+            portfolio_error = "Tokocrypto private balance disabled in GitHub mode; using config portfolio."
 
     btc_value = btc * price
     total_value = usdt + btc_value
@@ -852,45 +868,42 @@ Model routing:
 {grounding_instruction}
 
 Your task:
-Analyze the BTC/USDT situation based on the structured data.
+Act as a portfolio-aware BTC market analyst, not merely a rule explainer.
+Analyze the BTC/USDT situation based on:
+- rule-engine signal,
+- market regime,
+- portfolio allocation,
+- recovery gap,
+- open orders,
+- risk and mental discipline.
+
+You may agree or cautiously disagree with the rule-engine signal, but you must NOT override it.
+The final decision remains manual-only and rule-engine guarded.
+Do NOT recommend auto-trading.
+Do NOT suggest leverage, futures, margin, or all-in behavior.
+
+Use natural English, concise but analytical.
 Do NOT repeat the full numeric report.
 Do NOT list all open orders again.
 Do NOT summarize every raw number.
-Use natural English, concise but analytical.
+Mention only the most important numbers if necessary.
 Give interpretation only.
 
-CONTENT RULES:
-- Do NOT repeat the full numeric report.
-- Do NOT list all open orders again.
-- Do NOT summarize every raw number.
-- Give interpretation only.
-- Mention only the most important numbers if they are necessary.
-- If open orders are active, the action discipline must say: jangan tambah posisi BTC/manual buy tambahan agar tidak dobel entry.
-- Do NOT say "jangan tambah USDT"; the issue is not adding USDT, the issue is adding extra BTC manually.
-
-CONTENT RULES:
-
-- Do NOT repeat the full numeric report.
-- Do NOT list all open orders again.
-- Do NOT summarize every raw number.
-- Give interpretation only.
-- Mention only the most important numbers if they are necessary.
-- If open orders are active, the action discipline must say: jangan tambah posisi BTC/manual buy tambahan agar tidak dobel entry.
-- Do NOT say "jangan tambah USDT"; the issue is not adding USDT, the issue is adding extra BTC manually.
+If open orders are active:
+- Explain that extra manual BTC buy orders should NOT be placed.
+- The reason is to avoid double entry because existing buy orders are already active.
+- Do NOT say "no additional USDT actions"; the issue is not USDT, the issue is extra manual BTC buying.
 
 Allocation interpretation:
 - If btc_pct is below target_btc_min_pct, say BTC allocation is BELOW TARGET for recovery mode.
 - If btc_pct is between target_btc_min_pct and target_btc_max_pct, say it is within target range.
 - If btc_pct is above target_btc_max_pct, say it is too aggressive.
 
-Important:
-- Respect the rule-engine signal.
--If signal is HOLD / OPEN ORDERS ACTIVE:
-- Explain that the user should NOT place additional manual BTC buy orders.
-- The reason is to avoid double entry because existing buy orders are already active.
-- Do NOT say "no additional USDT actions"; the issue is not USDT, the issue is extra manual BTC buying.
-- Prioritize mental stability over aggressive recovery.
-- Mention what would invalidate the current signal.
+Agreement rules:
+- agreement_with_rule must be one of: "agree", "cautious_agree", "disagree_but_do_not_override".
+- confidence_score must be an integer from 0 to 100.
+- If the portfolio is underallocated to BTC but open orders are active, usually use "cautious_agree".
+- If the rule signal is HOLD because open orders are active, do not recommend extra manual BTC buying.
 
 Return ONLY valid JSON.
 Do not use Markdown.
@@ -900,11 +913,15 @@ Do not write any intro sentence.
 
 JSON schema:
 {{
-  "market_context": "A concise interpretation of market conditions, not a number dump.",
-  "portfolio_recovery": "Explain whether the BTC allocation is too low/balanced/too aggressive towards the recovery target.",
-  "action_discipline": "Explain the disciplinary action based on the signal. If HOLD / OPEN ORDERS ACTIVE, emphasize not adding BTC/manually buying additional orders.",
-  "invalidation": "Explain the specific conditions that will change the signal, for example, the order is executed/canceled, BTC reclaims the 20-day moving average, or a significant breakdown.",
-  "mental_note": "A short and firm psychological discipline note"
+  "agreement_with_rule": "agree | cautious_agree | disagree_but_do_not_override",
+  "confidence_score": 0,
+  "market_thesis": "Concise market thesis, not a raw data dump.",
+  "portfolio_diagnosis": "Portfolio allocation diagnosis relative to recovery target.",
+  "recovery_assessment": "Whether current allocation can realistically support recovery or needs controlled exposure later.",
+  "risk_assessment": "Main risk in the current setup.",
+  "suggested_manual_plan": "Manual-only plan that respects the rule-engine signal.",
+  "invalidation": "Specific conditions that would change the current signal.",
+  "mental_note": "Short psychological discipline note."
 }}
 
 Data:
@@ -967,17 +984,23 @@ Total response under 250 words.
                         "parts": [
                             {
                                 "text": (
-                                    "You are a crypto decision-support analyst. "
+                                    "You are a portfolio-aware BTC market analyst. "
                                     "Return ONLY valid JSON. No Markdown. No HTML. No code fences. "
                                     "Do not override the rule-engine signal. "
-                                    "Do not suggest leverage, futures, margin, or all-in. "
+                                    "Do not suggest leverage, futures, margin, auto-trading, or all-in. "
+                                    "You may agree or cautiously disagree with the rule-engine signal, but do not override it. "
+                                    "If open orders are active, do not recommend extra manual BTC buy orders. "
                                     "Use this JSON schema exactly: "
                                     "{"
-                                    "\"market_context\":\"A brief market interpretation\","
-                                    "\"portfolio_recovery\":\"An interpretation of allocation and recovery\","
-                                    "\"action_discipline\":\"Disciplined action based on signals\","
-                                    "\"invalidation\":\"Conditions that change signals\","
-                                    "\"mental_note\":\"A brief mental note\""
+                                    "\"agreement_with_rule\":\"agree | cautious_agree | disagree_but_do_not_override\","
+                                    "\"confidence_score\":0,"
+                                    "\"market_thesis\":\"concise market thesis\","
+                                    "\"portfolio_diagnosis\":\"portfolio allocation diagnosis\","
+                                    "\"recovery_assessment\":\"recovery realism assessment\","
+                                    "\"risk_assessment\":\"main risk assessment\","
+                                    "\"suggested_manual_plan\":\"manual-only plan\","
+                                    "\"invalidation\":\"specific invalidation condition\","
+                                    "\"mental_note\":\"short mental note\""
                                     "} "
                                     #"Buat ringkas dalam Bahasa Indonesia.\n\n"
                                     f"Data: {context}"
@@ -1195,12 +1218,16 @@ def extract_json_object(text):
 def format_ai_review_from_json(ai_data):
     """
     Render structured Gemini JSON into Telegram-safe HTML.
-    Ini mencegah Gemini merusak format final.
+    Gemini sekarang bukan hanya explainer, tapi analyst layer.
     """
     required_keys = [
-        "market_context",
-        "portfolio_recovery",
-        "action_discipline",
+        "agreement_with_rule",
+        "confidence_score",
+        "market_thesis",
+        "portfolio_diagnosis",
+        "recovery_assessment",
+        "risk_assessment",
+        "suggested_manual_plan",
         "invalidation",
         "mental_note",
     ]
@@ -1210,12 +1237,20 @@ def format_ai_review_from_json(ai_data):
 
     return (
         f"<b>AI Analyst Review</b>\n\n"
-        f"<b>Market Context</b>\n"
-        f"{esc(ai_data['market_context'])}\n\n"
-        f"<b>Portfolio & Recovery</b>\n"
-        f"{esc(ai_data['portfolio_recovery'])}\n\n"
-        f"<b>Action Discipline</b>\n"
-        f"{esc(ai_data['action_discipline'])}\n\n"
+        f"<b>Rule Agreement</b>\n"
+        f"{esc(ai_data['agreement_with_rule'])}\n\n"
+        f"<b>Confidence</b>\n"
+        f"{esc(ai_data['confidence_score'])}/100\n\n"
+        f"<b>Market Thesis</b>\n"
+        f"{esc(ai_data['market_thesis'])}\n\n"
+        f"<b>Portfolio Diagnosis</b>\n"
+        f"{esc(ai_data['portfolio_diagnosis'])}\n\n"
+        f"<b>Recovery Assessment</b>\n"
+        f"{esc(ai_data['recovery_assessment'])}\n\n"
+        f"<b>Risk Assessment</b>\n"
+        f"{esc(ai_data['risk_assessment'])}\n\n"
+        f"<b>Suggested Manual Plan</b>\n"
+        f"{esc(ai_data['suggested_manual_plan'])}\n\n"
         f"<b>Invalidation</b>\n"
         f"{esc(ai_data['invalidation'])}\n\n"
         f"<b>Mental Note</b>\n"
@@ -1529,6 +1564,19 @@ def main():
 
     if config.get("data_sources", {}).get("use_tokocrypto_open_orders", False):
         open_orders, open_orders_error = fetch_tokocrypto_open_orders()
+    else:
+        manual_orders_cfg = config.get("manual_open_orders", {})
+        if manual_orders_cfg.get("enabled", False):
+            open_orders = []
+            for order in manual_orders_cfg.get("orders", []):
+                if order.get("status") == "open":
+                    open_orders.append({
+                        "side": order.get("side"),
+                        "type": order.get("type"),
+                        "price": order.get("price"),
+                        "amount": order.get("amount"),
+                        "status": order.get("status"),
+                    })
 
     ai_explanation = generate_gemini_explanation(
         config=config,
