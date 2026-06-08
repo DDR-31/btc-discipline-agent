@@ -3,10 +3,10 @@ name: BTC Discipline Agent
 on:
   push:
     branches:
-  schedule:
+  #schedule:
     # GitHub cron memakai UTC.
     # Ini jalan setiap 30 menit.
-    - cron: "*/5 * * * *"
+    #- cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -44,12 +44,13 @@ jobs:
 
       - name: Run BTC Discipline Agent
         env:
+          BTC_AGENT_CONFIG: config_git.yaml
           PYTHONUNBUFFERED: "1"
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TOKOCRYPTO_API_KEY: ${{ secrets.TOKOCRYPTO_API_KEY }}
-          TOKOCRYPTO_API_SECRET: ${{ secrets.TOKOCRYPTO_API_SECRET }}
+          #TOKOCRYPTO_API_KEY: ${{ secrets.TOKOCRYPTO_API_KEY }}
+          #TOKOCRYPTO_API_SECRET: ${{ secrets.TOKOCRYPTO_API_SECRET }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          python main_once.py
+          python main.py
