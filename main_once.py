@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-
+import html
 import ccxt
 import pandas as pd
 import requests
@@ -50,6 +50,9 @@ def get_required_env(name):
         raise ValueError(f"Missing required environment variable: {name}")
     return value
 
+def esc(value):
+    return html.escape(str(value), quote=False)
+
 
 # ============================================================
 # Telegram
@@ -63,6 +66,8 @@ def send_telegram(message):
     payload = {
         "chat_id": chat_id,
         "text": message,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
     }
 
     response = requests.post(url, json=payload, timeout=25)
@@ -366,7 +371,8 @@ def calculate_portfolio(config, price):
         usdt_used = 0
 
         portfolio_source = "config_git.yaml"
-        portfolio_error = "Tokocrypto private balance disabled in config_git.yaml"
+        #portfolio_error = "Tokocrypto private balance disabled in config_git.yaml"
+        portfolio_error = "Tokocrypto private balance disabled in GitHub mode; using config portfolio."
 
     btc_value = btc * price
     total_value = usdt + btc_value
@@ -638,24 +644,53 @@ Do not override the signal.
 Do not tell the user to all-in.
 Do not suggest leverage, futures, margin, or high-risk behavior.
 
+Explain the following BTC/USDT decision in Indonesian, concise but clear.
+Focus on risk, position sizing, recovery, and mental discipline.
+
+IMPORTANT TELEGRAM FORMAT RULES:
+- Output must use Telegram-compatible HTML.
+- Use <b>...</b> for section labels.
+- Do NOT use Markdown.
+- Do NOT use **bold**.
+- Do NOT use bullet symbols with asterisks.
+- Do NOT wrap the output in code fences.
+- Only use these section labels:
+  <b>AI Explanation</b>
+  <b>Market</b>
+  <b>Portfolio</b>
+  <b>Recovery</b>
+  <b>Action</b>
+  <b>Invalidation</b>
+  <b>Mental note</b>
+
 You must include what would invalidate the current signal.
 You must mention whether the current BTC allocation is too low, balanced, or too high for the user's recovery goal.
 You must prioritize mental stability over aggressive recovery.
 
-Explain the following BTC/USDT decision in Indonesian, concise but clear.
-Focus on risk, position sizing, and mental discipline.
-
 Data:
 {context}
 
-Output format:
-AI Explanation:
-- Market:
-- Portfolio:
-- Recovery:
-- Action:
-- Invalidation:
-- Mental note:
+Output format exactly:
+
+<b>AI Explanation</b>
+
+<b>Market</b>
+...
+
+<b>Portfolio</b>
+...
+
+<b>Recovery</b>
+...
+
+<b>Action</b>
+...
+
+<b>Invalidation</b>
+...
+
+<b>Mental note</b>
+...
 """
 
     url = (
@@ -799,41 +834,69 @@ def build_message(config, market, portfolio, decision,
                   open_orders=None, ai_explanation="", open_orders_error=""):
     repo_reminder = build_repo_reminder(config)
     open_orders_text = format_open_orders(open_orders or [])
+
     recovery = calculate_recovery_status(config, portfolio)
     recovery_text = recovery.get("message", "")
     scenario_text = build_scenario_text(portfolio)
 
+    portfolio_note = ""
+    if portfolio.get("error"):
+        portfolio_note = (
+            f"<b>Portfolio note:</b> "
+            f"{esc(portfolio.get('error'))}\n"
+        )
+
+    open_orders_error_text = ""
+    if open_orders_error:
+        open_orders_error_text = (
+            f"<b>Open orders note:</b> {esc(open_orders_error)}\n"
+        )
+
+    ai_text = f"\n\n{ai_explanation}" if ai_explanation else ""
+
     return (
-        f"BTC Discipline Agent\n\n"
-        f"BTC/USDT: ${market['price']:,.0f}\n"
-        f"Source: {market.get('source', 'unknown')}\n"
-        f"Regime: {market['regime']}\n"
+        f"<b>BTC Discipline Agent</b>\n\n"
+
+        f"<b>Market</b>\n"
+        f"BTC/USDT: <b>${market['price']:,.0f}</b>\n"
+        f"Source: {esc(market.get('source', 'unknown'))}\n"
+        f"Regime: <b>{esc(market['regime'])}</b>\n"
         f"24h: {market['change_24h']:.2f}% | "
         f"7d: {market['change_7d']:.2f}% | "
         f"30d: {market['change_30d']:.2f}%\n"
         f"7d range: ${market['low_7d']:,.0f} - ${market['high_7d']:,.0f}\n"
         f"From 7d high: {market['from_7d_high']:.2f}%\n"
         f"MA7: ${market['ma_7']:,.0f} | MA20: ${market['ma_20']:,.0f}\n\n"
-        f"Portfolio:\n"
-        f"Source: {portfolio.get('source', 'unknown')}\n"
-        f"{'Portfolio error: ' + portfolio.get('error', '') + chr(10) if portfolio.get('error') else ''}"
+
+        f"<b>Portfolio</b>\n"
+        f"Source: {esc(portfolio.get('source', 'unknown'))}\n"
+        f"{portfolio_note}"
         f"BTC: {portfolio['btc_pct']:.1f}% | USDT: {portfolio['usdt_pct']:.1f}%\n"
         f"BTC total: {portfolio['btc']:.8f}\n"
         f"USDT free: {portfolio['usdt_free']:.2f}\n"
         f"USDT used/open orders: {portfolio['usdt_used']:.2f}\n"
         f"USDT total: {portfolio['usdt']:.2f}\n"
-        f"Total value: {portfolio['total_value']:.2f} USDT\n\n"
-        f"{recovery_text}\n\n"
-        f"{scenario_text}\n\n"
-        f"{open_orders_text}\n"
-        f"{'Open orders error: ' + open_orders_error + chr(10) if open_orders_error else ''}\n"
-        
-        f"Signal: {decision['signal']}\n"
-        f"Recommended action: {decision['action_usdt']:.2f} USDT\n"
-        f"Reason: {decision['reason']}\n\n"
-        f"Mental rule: jangan FOMO, jangan revenge trade."
-        f"{repo_reminder}"
-        f"\n\n{ai_explanation if ai_explanation else ''}"
+        f"Total value: <b>{portfolio['total_value']:.2f} USDT</b>\n\n"
+
+        f"<b>Recovery</b>\n"
+        f"{esc(recovery_text)}\n\n"
+
+        f"<b>Scenario</b>\n"
+        f"{esc(scenario_text)}\n\n"
+
+        f"<b>Open Orders</b>\n"
+        f"{esc(open_orders_text)}\n"
+        f"{open_orders_error_text}\n"
+
+        f"<b>Decision</b>\n"
+        f"Signal: <b>{esc(decision['signal'])}</b>\n"
+        f"Recommended action: <b>{decision['action_usdt']:.2f} USDT</b>\n"
+        f"Reason: {esc(decision['reason'])}\n\n"
+
+        f"<b>Mental rule</b>\n"
+        f"Jangan FOMO, jangan revenge trade."
+        f"{esc(repo_reminder)}"
+        f"{ai_text}"
     )
 
 # ============================================================
