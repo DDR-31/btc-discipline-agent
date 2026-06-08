@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime, timezone
 import html
 import ccxt
@@ -597,6 +598,177 @@ def build_repo_reminder(config):
 # Gemini explanation
 # ============================================================
 
+LLM_USAGE_STATE_FILE = "data/llm_usage_state.json"
+
+
+def load_llm_usage_state():
+    os.makedirs("data", exist_ok=True)
+
+    if not os.path.exists(LLM_USAGE_STATE_FILE):
+        return {
+            "date_utc": datetime.now(timezone.utc).date().isoformat(),
+            "grounded_runs_today": 0,
+        }
+
+    try:
+        with open(LLM_USAGE_STATE_FILE, "r", encoding="utf-8") as file:
+            state = json.load(file)
+    except Exception:
+        state = {}
+
+    today = datetime.now(timezone.utc).date().isoformat()
+
+    if state.get("date_utc") != today:
+        return {
+            "date_utc": today,
+            "grounded_runs_today": 0,
+        }
+
+    state.setdefault("grounded_runs_today", 0)
+    return state
+
+
+def save_llm_usage_state(state):
+    os.makedirs("data", exist_ok=True)
+
+    with open(LLM_USAGE_STATE_FILE, "w", encoding="utf-8") as file:
+        json.dump(state, file, indent=2)
+
+
+def calculate_recovery_gap_pct(config, portfolio):
+    recovery_cfg = config.get("recovery", {})
+    initial_capital = float(recovery_cfg.get("initial_capital_usdt", 0))
+
+    if initial_capital <= 0:
+        return 0
+
+    current_value = float(portfolio["total_value"])
+    gap = initial_capital - current_value
+
+    if gap <= 0 or current_value <= 0:
+        return 0
+
+    return (gap / current_value) * 100
+
+
+def is_action_signal(decision):
+    signal = decision.get("signal", "").upper()
+
+    passive_keywords = [
+        "HOLD",
+        "NO TRADE",
+        "DO NOT FOMO",
+        "WAIT",
+    ]
+
+    return not any(keyword in signal for keyword in passive_keywords)
+
+
+def should_use_deep_model(config, market, portfolio, decision):
+    llm_cfg = config.get("llm", {})
+    deep_cfg = llm_cfg.get("deep_review", {})
+
+    if not deep_cfg.get("enabled", False):
+        return False, "deep_review disabled"
+
+    abs_24h = abs(float(market.get("change_24h", 0)))
+    high_vol_threshold = float(deep_cfg.get("high_volatility_24h_abs_pct", 4))
+
+    if deep_cfg.get("use_pro_on_high_volatility", True) and abs_24h >= high_vol_threshold:
+        return True, f"high volatility: 24h change {abs_24h:.2f}%"
+
+    if deep_cfg.get("use_pro_on_action_signal", True) and is_action_signal(decision):
+        return True, f"action signal: {decision.get('signal')}"
+
+    recovery_gap_pct = calculate_recovery_gap_pct(config, portfolio)
+    recovery_threshold = float(deep_cfg.get("recovery_gap_pct_threshold", 10))
+
+    if deep_cfg.get("use_pro_on_recovery_risk", True) and recovery_gap_pct >= recovery_threshold:
+        return True, f"recovery gap high: {recovery_gap_pct:.1f}%"
+
+    return False, "normal review"
+
+
+def should_use_google_grounding(config, market, decision):
+    llm_cfg = config.get("llm", {})
+    grounding_cfg = llm_cfg.get("grounding", {})
+
+    if not grounding_cfg.get("enabled", False):
+        return False, "grounding disabled"
+
+    if not grounding_cfg.get("use_google_search", False):
+        return False, "google search disabled"
+
+    usage_state = load_llm_usage_state()
+    max_grounded = int(grounding_cfg.get("max_grounded_runs_per_day", 4))
+
+    if usage_state.get("grounded_runs_today", 0) >= max_grounded:
+        return False, "daily grounding cap reached"
+
+    now_hour = datetime.now(timezone.utc).hour
+    daily_hours = grounding_cfg.get("daily_review_utc_hours", [])
+
+    if grounding_cfg.get("use_on_daily_review", True) and now_hour in daily_hours:
+        return True, f"daily grounded review hour UTC={now_hour}"
+
+    abs_24h = abs(float(market.get("change_24h", 0)))
+    high_vol_threshold = float(
+        config.get("llm", {})
+        .get("deep_review", {})
+        .get("high_volatility_24h_abs_pct", 4)
+    )
+
+    if grounding_cfg.get("use_on_high_volatility", True) and abs_24h >= high_vol_threshold:
+        return True, f"grounding due to high volatility: {abs_24h:.2f}%"
+
+    if grounding_cfg.get("use_on_action_signal", False) and is_action_signal(decision):
+        return True, f"grounding due to action signal: {decision.get('signal')}"
+
+    return False, "grounding not needed"
+
+
+def record_grounding_usage():
+    state = load_llm_usage_state()
+    state["grounded_runs_today"] = int(state.get("grounded_runs_today", 0)) + 1
+    save_llm_usage_state(state)
+
+
+def choose_gemini_model(config, market, portfolio, decision):
+    """
+    Model routing:
+    - Grounding aktif -> pakai grounding_model, default gemini-2.5-flash.
+    - Deep review aktif -> pakai deep_model, default gemini-2.5-pro.
+    - Normal -> pakai default_model, default gemini-2.5-flash.
+    """
+    llm_cfg = config.get("llm", {})
+
+    use_grounding, grounding_reason = should_use_google_grounding(config, market, decision)
+
+    if use_grounding:
+        return {
+            "model": llm_cfg.get("grounding_model", "gemini-2.5-flash"),
+            "max_output_tokens": int(llm_cfg.get("grounding_max_output_tokens", 1000)),
+            "use_grounding": True,
+            "routing_reason": grounding_reason,
+        }
+
+    use_deep, deep_reason = should_use_deep_model(config, market, portfolio, decision)
+
+    if use_deep:
+        return {
+            "model": llm_cfg.get("deep_model", "gemini-2.5-pro"),
+            "max_output_tokens": int(llm_cfg.get("deep_max_output_tokens", 1000)),
+            "use_grounding": False,
+            "routing_reason": deep_reason,
+        }
+
+    return {
+        "model": llm_cfg.get("default_model", "gemini-2.5-flash"),
+        "max_output_tokens": int(llm_cfg.get("max_output_tokens", 500)),
+        "use_grounding": False,
+        "routing_reason": "default normal review",
+    }
+
 def build_rule_summary_for_llm(config, market, portfolio, decision, open_orders):
     return {
         "market": {
@@ -624,7 +796,254 @@ def build_rule_summary_for_llm(config, market, portfolio, decision, open_orders)
         "open_orders": open_orders[:5],
     }
 
+def generate_gemini_explanation(config, market, portfolio, decision, open_orders):
+    llm_cfg = config.get("llm", {})
+    if not llm_cfg.get("enabled", False):
+        return ""
 
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return ""
+
+    routing = choose_gemini_model(config, market, portfolio, decision)
+
+    model = routing["model"]
+    max_output_tokens = routing["max_output_tokens"]
+    use_grounding = routing["use_grounding"]
+    routing_reason = routing["routing_reason"]
+
+    temperature = float(llm_cfg.get("temperature", 0.2))
+
+    context = build_rule_summary_for_llm(config, market, portfolio, decision, open_orders)
+
+    recovery = calculate_recovery_status(config, portfolio)
+    scenario = build_scenario_text(portfolio)
+
+    grounding_instruction = ""
+    if use_grounding:
+        grounding_instruction = """
+You have Google Search grounding enabled.
+Use it only to assess broad current market context such as:
+- crypto market sentiment,
+- Bitcoin-related macro or ETF headlines,
+- global risk appetite,
+- major risk-on/risk-off catalysts.
+
+Do not overreact to one headline.
+Do not cite rumors as facts.
+Do not turn news sentiment into an aggressive trading recommendation.
+"""
+
+    prompt = f"""
+You are a crypto decision-support analyst for a manual-only BTC Discipline Agent.
+
+The bot is NOT allowed to trade.
+The user manually executes decisions.
+You must respect the rule-engine signal.
+Do not override the signal.
+Do not tell the user to all-in.
+Do not suggest leverage, futures, margin, or high-risk behavior.
+
+Model routing:
+- Model used: {model}
+- Routing reason: {routing_reason}
+- Google Search grounding enabled: {use_grounding}
+
+{grounding_instruction}
+
+Your task:
+Analyze the BTC/USDT situation based on the structured data.
+Do NOT repeat the full numeric report.
+Do NOT list all open orders again.
+Do NOT summarize every raw number.
+Use natural English, concise but analytical.
+Give interpretation only.
+
+CONTENT RULES:
+- Do NOT repeat the full numeric report.
+- Do NOT list all open orders again.
+- Do NOT summarize every raw number.
+- Give interpretation only.
+- Mention only the most important numbers if they are necessary.
+- If open orders are active, the action discipline must say: jangan tambah posisi BTC/manual buy tambahan agar tidak dobel entry.
+- Do NOT say "jangan tambah USDT"; the issue is not adding USDT, the issue is adding extra BTC manually.
+
+CONTENT RULES:
+
+- Do NOT repeat the full numeric report.
+- Do NOT list all open orders again.
+- Do NOT summarize every raw number.
+- Give interpretation only.
+- Mention only the most important numbers if they are necessary.
+- If open orders are active, the action discipline must say: jangan tambah posisi BTC/manual buy tambahan agar tidak dobel entry.
+- Do NOT say "jangan tambah USDT"; the issue is not adding USDT, the issue is adding extra BTC manually.
+
+Allocation interpretation:
+- If btc_pct is below target_btc_min_pct, say BTC allocation is BELOW TARGET for recovery mode.
+- If btc_pct is between target_btc_min_pct and target_btc_max_pct, say it is within target range.
+- If btc_pct is above target_btc_max_pct, say it is too aggressive.
+
+Important:
+- Respect the rule-engine signal.
+-If signal is HOLD / OPEN ORDERS ACTIVE:
+- Explain that the user should NOT place additional manual BTC buy orders.
+- The reason is to avoid double entry because existing buy orders are already active.
+- Do NOT say "no additional USDT actions"; the issue is not USDT, the issue is extra manual BTC buying.
+- Prioritize mental stability over aggressive recovery.
+- Mention what would invalidate the current signal.
+
+Return ONLY valid JSON.
+Do not use Markdown.
+Do not use HTML.
+Do not use code fences.
+Do not write any intro sentence.
+
+JSON schema:
+{{
+  "market_context": "A concise interpretation of market conditions, not a number dump.",
+  "portfolio_recovery": "Explain whether the BTC allocation is too low/balanced/too aggressive towards the recovery target.",
+  "action_discipline": "Explain the disciplinary action based on the signal. If HOLD / OPEN ORDERS ACTIVE, emphasize not adding BTC/manually buying additional orders.",
+  "invalidation": "Explain the specific conditions that will change the signal, for example, the order is executed/canceled, BTC reclaims the 20-day moving average, or a significant breakdown.",
+  "mental_note": "A short and firm psychological discipline note"
+}}
+
+Data:
+{context}
+
+Recovery:
+{recovery}
+
+Scenario:
+{scenario}
+
+Keep each JSON value concise.
+Total response under 250 words.
+"""
+
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent?key={api_key}"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_output_tokens,
+            "responseMimeType": "application/json",
+        },
+    }
+
+    if use_grounding:
+        payload["tools"] = [
+            {
+                "google_search": {}
+            }
+        ]
+
+    try:
+        response = requests.post(url, json=payload, timeout=45)
+
+        if not response.ok:
+            print(f"[WARN] Gemini error with {model}: {response.status_code} {response.text}")
+
+            fallback_model = llm_cfg.get("fallback_model", "gemini-2.5-flash-lite")
+            fallback_tokens = int(llm_cfg.get("fallback_max_output_tokens", 300))
+
+            fallback_url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{fallback_model}:generateContent?key={api_key}"
+            )
+
+            fallback_payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {
+                                "text": (
+                                    "You are a crypto decision-support analyst. "
+                                    "Return ONLY valid JSON. No Markdown. No HTML. No code fences. "
+                                    "Do not override the rule-engine signal. "
+                                    "Do not suggest leverage, futures, margin, or all-in. "
+                                    "Use this JSON schema exactly: "
+                                    "{"
+                                    "\"market_context\":\"A brief market interpretation\","
+                                    "\"portfolio_recovery\":\"An interpretation of allocation and recovery\","
+                                    "\"action_discipline\":\"Disciplined action based on signals\","
+                                    "\"invalidation\":\"Conditions that change signals\","
+                                    "\"mental_note\":\"A brief mental note\""
+                                    "} "
+                                    #"Buat ringkas dalam Bahasa Indonesia.\n\n"
+                                    f"Data: {context}"
+
+                                )
+                            }
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": temperature,
+                    "maxOutputTokens": fallback_tokens,
+                },
+            }
+
+            fallback_response = requests.post(fallback_url, json=fallback_payload, timeout=30)
+
+            if not fallback_response.ok:
+                print(f"[WARN] Gemini fallback error: {fallback_response.status_code} {fallback_response.text}")
+                return ""
+
+            data = fallback_response.json()
+            candidates = data.get("candidates", [])
+            if not candidates:
+                return ""
+
+            parts = candidates[0].get("content", {}).get("parts", [])
+            if not parts:
+                return ""
+
+            raw_text = parts[0].get("text", "").strip()
+
+            try:
+                ai_json = extract_json_object(raw_text)
+                return format_ai_review_from_json(ai_json)
+            except Exception as parse_error:
+                print(f"[WARN] Gemini JSON parse failed: {parse_error}")
+                return clean_ai_explanation(raw_text)
+
+        data = response.json()
+
+        if use_grounding:
+            record_grounding_usage()
+
+        candidates = data.get("candidates", [])
+        if not candidates:
+            return ""
+
+        parts = candidates[0].get("content", {}).get("parts", [])
+        if not parts:
+            return ""
+
+        raw_text = parts[0].get("text", "").strip()
+        
+        try:
+            ai_json = extract_json_object(raw_text)
+            return format_ai_review_from_json(ai_json)
+        except Exception as parse_error:
+            print(f"[WARN] Gemini JSON parse failed: {parse_error}")
+            return clean_ai_explanation(raw_text)
+
+    except Exception as error:
+        print(f"[WARN] Gemini failed: {error}")
+        return ""
+
+'''
 def generate_gemini_explanation(config, market, portfolio, decision, open_orders):
     llm_cfg = config.get("llm", {})
     if not llm_cfg.get("enabled", False):
@@ -635,7 +1054,7 @@ def generate_gemini_explanation(config, market, portfolio, decision, open_orders
         return ""
 
     model = llm_cfg.get("model", "gemini-2.5-flash-lite")
-    max_output_tokens = int(llm_cfg.get("max_output_tokens", 300))
+    max_output_tokens = int(llm_cfg.get("max_output_tokens", 850))
     temperature = float(llm_cfg.get("temperature", 0.2))
 
     context = build_rule_summary_for_llm(config, market, portfolio, decision, open_orders)
@@ -745,25 +1164,137 @@ Be concise.
     except Exception as error:
         print(f"[WARN] Gemini failed: {error}")
         return ""
+'''
+
+def extract_json_object(text):
+    """
+    Ambil JSON object dari output Gemini.
+    Tetap aman walau Gemini membungkus output dengan ```json ... ```.
+    """
+    if not text:
+        raise ValueError("Empty Gemini response")
+
+    text = text.strip()
+
+    # Remove code fences if any
+    text = re.sub(r"^```(?:json|JSON)?\s*", "", text).strip()
+    text = re.sub(r"\s*```$", "", text).strip()
+    text = text.replace("```json", "").replace("```JSON", "").replace("```", "").strip()
+
+    # Extract first JSON object
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start == -1 or end == -1 or end <= start:
+        raise ValueError(f"No JSON object found in Gemini response: {text[:200]}")
+
+    json_text = text[start:end + 1]
+    return json.loads(json_text)
+
+
+def format_ai_review_from_json(ai_data):
+    """
+    Render structured Gemini JSON into Telegram-safe HTML.
+    Ini mencegah Gemini merusak format final.
+    """
+    required_keys = [
+        "market_context",
+        "portfolio_recovery",
+        "action_discipline",
+        "invalidation",
+        "mental_note",
+    ]
+
+    for key in required_keys:
+        ai_data.setdefault(key, "")
+
+    return (
+        f"<b>AI Analyst Review</b>\n\n"
+        f"<b>Market Context</b>\n"
+        f"{esc(ai_data['market_context'])}\n\n"
+        f"<b>Portfolio & Recovery</b>\n"
+        f"{esc(ai_data['portfolio_recovery'])}\n\n"
+        f"<b>Action Discipline</b>\n"
+        f"{esc(ai_data['action_discipline'])}\n\n"
+        f"<b>Invalidation</b>\n"
+        f"{esc(ai_data['invalidation'])}\n\n"
+        f"<b>Mental Note</b>\n"
+        f"{esc(ai_data['mental_note'])}"
+    )
 
 def clean_ai_explanation(text):
     """
     Membersihkan output Gemini agar rapi di Telegram HTML mode.
-    - Mengubah **bold** menjadi <b>bold</b>
-    - Menghapus bullet Markdown berlebihan
-    - Merapikan whitespace
+    Tujuan:
+    - Hapus pembuka seperti 'Berikut adalah...'
+    - Hapus Markdown code fences ```html ... ```
+    - Convert Markdown bold ke HTML bold
+    - Hapus bullet Markdown
+    - Escape teks berbahaya tanpa merusak tag HTML Telegram yang kita izinkan
     """
     if not text:
         return ""
 
+    text = text.strip()
+
+    # Remove common Gemini preamble
+    preamble_patterns = [
+        r"^Berikut adalah.*?:\s*",
+        r"^Berikut penjelasan.*?:\s*",
+        r"^Tentu,.*?:\s*",
+        r"^Sure,.*?:\s*",
+        r"^Here is.*?:\s*",
+    ]
+
+    for pattern in preamble_patterns:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL).strip()
+
+    # Remove markdown code fences: ```html, ```HTML, ```
+    text = re.sub(r"^```(?:html|HTML)?\s*", "", text).strip()
+    text = re.sub(r"\s*```$", "", text).strip()
+
+    # If Gemini wraps the full output inside code fences somewhere in the text
+    text = text.replace("```html", "")
+    text = text.replace("```HTML", "")
+    text = text.replace("```", "")
+
     # Convert Markdown bold to Telegram HTML bold
     text = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", text)
 
-    # Remove Markdown bullet style if Gemini outputs "*   "
-    text = re.sub(r"^\*\s+", "", text, flags=re.MULTILINE)
+    # Remove Markdown bullet style
+    text = re.sub(r"^\*\s+", "- ", text, flags=re.MULTILINE)
+
+    # Remove excessive indentation
+    text = re.sub(r"^[ \t]+", "", text, flags=re.MULTILINE)
 
     # Reduce excessive blank lines
     text = re.sub(r"\n{3,}", "\n\n", text)
+
+    # Keep only Telegram-safe HTML tags we intentionally allow.
+    # Escape all angle brackets first, then unescape allowed tags.
+    allowed_tags = [
+        "b", "/b",
+        "i", "/i",
+        "u", "/u",
+        "s", "/s",
+        "code", "/code",
+        "pre", "/pre",
+    ]
+
+    # Temporarily protect allowed tags
+    protected = {}
+    for i, tag in enumerate(allowed_tags):
+        raw = f"<{tag}>"
+        key = f"__TAG_{i}__"
+        protected[key] = raw
+        text = text.replace(raw, key)
+
+    # Escape remaining HTML
+    text = html.escape(text, quote=False)
+
+    # Restore allowed tags
+    for key, raw in protected.items():
+        text = text.replace(key, raw)
 
     return text.strip()
 
@@ -887,6 +1418,14 @@ def build_message(config, market, portfolio, decision,
 
     ai_text = f"\n\n{ai_explanation}" if ai_explanation else ""
 
+    llm_routing = choose_gemini_model(config, market, portfolio, decision)
+    llm_text = (
+        f"<b>LLM Routing</b>\n"
+        f"Model: {esc(llm_routing['model'])}\n"
+        f"Grounding: {esc(llm_routing['use_grounding'])}\n"
+        f"Reason: {esc(llm_routing['routing_reason'])}\n\n"
+    )
+
     return (
         f"<b>BTC Discipline Agent</b>\n\n"
 
@@ -927,7 +1466,8 @@ def build_message(config, market, portfolio, decision,
         f"Reason: {esc(decision['reason'])}\n\n"
 
         f"<b>Mental rule</b>\n"
-        f"Jangan FOMO, jangan revenge trade."
+        f"Jangan FOMO, jangan revenge trade.\n\n"
+        f"{llm_text}"
         f"{esc(repo_reminder)}"
         f"{ai_text}"
     )
