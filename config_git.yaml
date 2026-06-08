@@ -1,16 +1,16 @@
 symbol: BTCUSDT
 
 portfolio:
-  usdt: 270.35
-  btc: 0.00067
-  target_btc_min_pct: 25
-  target_btc_max_pct: 40
-  max_single_buy_usdt: 40
+  usdt: 270.35080653
+  btc: 0.00065886
+  target_btc_min_pct: 50
+  target_btc_max_pct: 75
+  max_single_buy_usdt: 60
   emergency_usdt_reserve: 150
 
 mental:
   state: calm
-  max_alerts_per_day: 6
+  max_alerts_per_day: 8
 
 risk:
   pump_24h_pct: 4
@@ -58,6 +58,6 @@ llm:
   fallback_to_rule_message: true
 
 recovery:
-  initial_capital_usdt: 363.71
+  initial_capital_usdt: 385
   target_months: 3
   target_mode: break_even_first
