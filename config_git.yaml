@@ -56,13 +56,6 @@ manual_open_orders:
 
     - side: buy
       type: limit
-      price: 61000
-      amount: 0.00040
-      allocated_usdt: 24.40
-      status: filled
-
-    - side: buy
-      type: limit
       price: 60000
       amount: 0.00050
       allocated_usdt: 30.00
@@ -75,6 +68,72 @@ intrahour_price_check:
   touch_tolerance_pct: 0.15
   force_verify_on_touch: true
   estimate_portfolio_if_touched: true
+
+gemini_decision:
+  enabled: true
+
+  # Gemini can affect final decision, but only through deterministic risk guards.
+  affect_final_decision: true
+
+  allowed_to_recommend_buy: true
+  allow_buy_with_open_orders: true
+
+  # More responsive upside participation, but still small.
+  max_buy_usdt_with_open_orders: 15
+  max_buy_usdt_without_open_orders: 40
+
+  min_confidence_to_buy: 80
+  min_confidence_to_sell: 80
+
+  min_usdt_free_after_buy: 150
+
+  # Includes current BTC + all open buy orders + Gemini extra buy.
+  max_total_planned_btc_pct: 45
+  require_btc_below_target_min: true
+
+  block_buy_if_possible_fill_detected: true
+  block_buy_if_panic_or_dump: true
+  block_buy_if_24h_pump_above_pct: 4
+
+  bullish_confirmation:
+    require_price_above_ma7: true
+
+    # Responsive mode:
+    # buy candidate can appear above MA7 even if still below MA20.
+    require_price_above_ma20: false
+    confirmation_above_ma20_pct: 1.5
+    allow_if_price_above_ma7_but_below_ma20: true
+
+btc_cost_basis:
+  enabled: false
+  avg_entry_price: 0
+
+sell_strategy:
+  enabled: true
+
+  allow_take_profit_sell: true
+  allow_rebalance_sell: true
+
+  # Keep false for now. Do not panic-sell underallocated BTC.
+  allow_risk_reduction_sell: false
+
+  max_single_sell_btc_pct_of_holdings: 25
+  min_btc_pct_after_sell: 50
+
+  take_profit:
+    enabled: true
+    min_profit_pct_from_avg_entry: 8
+    sell_pct_of_holdings: 20
+
+  rebalance:
+    enabled: true
+    sell_if_btc_pct_above: 75
+    target_btc_pct_after_sell: 65
+
+  risk_reduction:
+    enabled: false
+    sell_if_price_below_ma20_pct: 3
+    sell_pct_of_holdings: 15
 
 safety:
   allow_trading: false
@@ -91,9 +150,6 @@ llm:
     reserve_requests_per_model: 0
     rate_limit_cooldown_minutes: 15
 
-  # Hourly deep-first system:
-  # Pada jam normal, bot mencoba deep_primary dulu.
-  # Kalau kuota deep_primary habis, otomatis turun ke deep_secondary.
   hourly_deep:
     enabled: true
 
@@ -118,13 +174,11 @@ llm:
       max_output_tokens: 1500
       daily_limit: 20
 
-  # Fallback JSON chain.
-  # Dipakai kalau main model error, quota/rate limit, output kosong,
-  # malformed, atau tidak mengandung END_REVIEW.
   fallback_models:
     - model: "gemini-2.5-flash"
       max_output_tokens: 2200
       daily_limit: 20
+
     - model: "gemini-2.5-flash-lite"
       max_output_tokens: 1500
       daily_limit: 20
@@ -150,32 +204,3 @@ recovery:
   initial_capital_usdt: 380
   target_months: 3
   target_mode: break_even_first
-
-gemini_decision:
-  enabled: true
-
-  # Awal-awal sebaiknya false dulu untuk test.
-  # Setelah hasilnya masuk akal, ubah ke true.
-  affect_final_decision: false
-
-  allowed_to_recommend_buy: true
-  allow_buy_with_open_orders: true
-
-  max_buy_usdt_with_open_orders: 25
-  max_buy_usdt_without_open_orders: 40
-
-  min_confidence_to_buy: 70
-  min_usdt_free_after_buy: 150
-
-  max_total_planned_btc_pct: 55
-  require_btc_below_target_min: true
-
-  block_buy_if_possible_fill_detected: true
-  block_buy_if_panic_or_dump: true
-  block_buy_if_24h_pump_above_pct: 4
-
-  bullish_confirmation:
-    require_price_above_ma7: true
-    require_price_above_ma20: true
-    confirmation_above_ma20_pct: 1.5
-    allow_if_price_above_ma7_but_below_ma20: false
