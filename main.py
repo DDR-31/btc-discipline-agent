@@ -680,6 +680,103 @@ def calculate_planned_btc_exposure_pct(config, portfolio, market_price, extra_bu
 
     return planned_btc_value / total_value * 100
 
+def calculate_upside_btc_pct_after_buy(portfolio, market_price, buy_usdt):
+    """
+    Upside BTC exposure:
+    current BTC + immediate Gemini buy only.
+    This intentionally excludes lower open buy orders because they are unlikely
+    to fill if BTC continues moving upward.
+    """
+    btc_now = float(portfolio.get("btc", 0) or 0)
+    total_value = float(portfolio.get("total_value", 0) or 0)
+
+    if market_price <= 0 or total_value <= 0:
+        return 0.0
+
+    extra_btc = 0.0
+    if buy_usdt > 0:
+        extra_btc = buy_usdt / market_price
+
+    btc_value_after_buy = (btc_now + extra_btc) * market_price
+    return btc_value_after_buy / total_value * 100
+
+
+def get_gemini_exposure_tier(config, market, has_open_orders):
+    """
+    Select exposure tier for Gemini buy candidate.
+
+    Tiers:
+    - early_confirmation: BTC above MA7, but not confirmed above MA20.
+    - confirmed_breakout: BTC above MA20 confirmation threshold.
+    - overheated: 24h pump too high; block fresh buy.
+    """
+    decision_cfg = config.get("gemini_decision", {})
+    exposure_policy = decision_cfg.get("exposure_policy", {})
+
+    if not exposure_policy.get("enabled", False):
+        return None
+
+    price = float(market.get("price", 0) or 0)
+    ma7 = float(market.get("ma_7", 0) or 0)
+    ma20 = float(market.get("ma_20", 0) or 0)
+    change_24h = float(market.get("change_24h", 0) or 0)
+
+    if price <= 0 or ma7 <= 0 or ma20 <= 0:
+        return None
+
+    overheated_cfg = exposure_policy.get("overheated", {})
+    pump_block_pct = float(overheated_cfg.get("block_buy_if_24h_pump_above_pct", 4))
+
+    if change_24h >= pump_block_pct:
+        return {
+            "name": "overheated",
+            "can_buy": False,
+            "settings": overheated_cfg,
+            "reason": (
+                f"BTC 24h change is {change_24h:.2f}%, above overheated block "
+                f"{pump_block_pct:.2f}%."
+            ),
+        }
+
+    bullish_cfg = decision_cfg.get("bullish_confirmation", {})
+    confirmation_pct = float(bullish_cfg.get("confirmation_above_ma20_pct", 1.5))
+    confirmed_breakout_price = ma20 * (1 + confirmation_pct / 100)
+
+    if price > confirmed_breakout_price and price > ma7:
+        settings = exposure_policy.get("confirmed_breakout", {})
+        return {
+            "name": "confirmed_breakout",
+            "can_buy": True,
+            "settings": settings,
+            "reason": (
+                f"BTC is above MA7 and above confirmed MA20 threshold "
+                f"({confirmed_breakout_price:.2f})."
+            ),
+        }
+
+    if price > ma7:
+        settings = exposure_policy.get("early_confirmation", {})
+        return {
+            "name": "early_confirmation",
+            "can_buy": True,
+            "settings": settings,
+            "reason": "BTC is above MA7 but has not confirmed above MA20 yet.",
+        }
+
+    return None
+
+
+def get_tiered_max_buy_usdt(exposure_tier, has_open_orders):
+    if not exposure_tier or not exposure_tier.get("can_buy", False):
+        return 0.0
+
+    settings = exposure_tier.get("settings", {})
+
+    if has_open_orders:
+        return float(settings.get("max_buy_usdt_with_open_orders", 0) or 0)
+
+    return float(settings.get("max_buy_usdt_without_open_orders", 0) or 0)
+
 
 def calculate_btc_pct_after_sell(portfolio, market_price, sell_btc):
     btc_now = float(portfolio.get("btc", 0) or 0)
@@ -1092,53 +1189,90 @@ def build_gemini_candidate_actions(config, market, portfolio, open_orders, intra
         if market["change_24h"] <= config["risk"]["dump_24h_pct"]:
             return actions
 
-    pump_block_pct = float(decision_cfg.get("block_buy_if_24h_pump_above_pct", 4))
-    if market["change_24h"] >= pump_block_pct:
-        return actions
-
-    bullish_ok = is_bullish_confirmation_for_gemini_decision(config, market)
-    if not bullish_ok:
-        return actions
-
-    if has_open_orders and not decision_cfg.get("allow_buy_with_open_orders", False):
-        return actions
-
     if decision_cfg.get("require_btc_below_target_min", True):
         if portfolio["btc_pct"] >= config["portfolio"]["target_btc_min_pct"]:
             return actions
 
-    max_buy = (
-        float(decision_cfg.get("max_buy_usdt_with_open_orders", 15))
-        if has_open_orders
-        else float(decision_cfg.get("max_buy_usdt_without_open_orders", 40))
+    if has_open_orders and not decision_cfg.get("allow_buy_with_open_orders", False):
+        return actions
+
+    exposure_tier = get_gemini_exposure_tier(
+        config=config,
+        market=market,
+        has_open_orders=has_open_orders,
     )
+
+    if not exposure_tier:
+        return actions
+
+    if not exposure_tier.get("can_buy", False):
+        actions.append({
+            "key": "HOLD_OVERHEATED_NO_FOMO",
+            "type": "hold",
+            "signal": "HOLD / OVERHEATED NO FOMO",
+            "max_buy_usdt": 0,
+            "max_sell_btc_pct_of_holdings": 0,
+            "exposure_tier": exposure_tier.get("name"),
+            "reason": exposure_tier.get("reason", "BTC is overheated. Fresh buy blocked."),
+        })
+        return actions
+
+    max_buy = get_tiered_max_buy_usdt(
+        exposure_tier=exposure_tier,
+        has_open_orders=has_open_orders,
+    )
+
+    if max_buy <= 0:
+        return actions
 
     min_free = float(decision_cfg.get("min_usdt_free_after_buy", 150))
     if portfolio["usdt_free"] - max_buy < min_free:
         return actions
 
-    planned_pct = calculate_planned_btc_exposure_pct(
+    tier_settings = exposure_tier.get("settings", {})
+
+    upside_pct = calculate_upside_btc_pct_after_buy(
+        portfolio=portfolio,
+        market_price=market["price"],
+        buy_usdt=max_buy,
+    )
+
+    downside_planned_pct = calculate_planned_btc_exposure_pct(
         config=config,
         portfolio=portfolio,
         market_price=market["price"],
         extra_buy_usdt=max_buy,
     )
 
-    max_planned_pct = float(decision_cfg.get("max_total_planned_btc_pct", 45))
+    max_upside_pct = float(tier_settings.get("max_upside_btc_pct_after_buy", 35))
+    max_downside_pct = float(tier_settings.get("max_downside_planned_btc_pct", 55))
+    tier_min_confidence = int(tier_settings.get("min_confidence_to_buy", decision_cfg.get("min_confidence_to_buy", 80)))
 
-    if planned_pct <= max_planned_pct:
-        actions.append({
-            "key": "BUY_SMALL_CONFIRMATION_WITH_LADDER",
-            "type": "buy",
-            "signal": "BUY SMALL / BULLISH CONFIRMATION WITH LADDER ACTIVE",
-            "max_buy_usdt": max_buy,
-            "max_sell_btc_pct_of_holdings": 0,
-            "reason": (
-                "Bullish confirmation is valid, BTC allocation is below target, "
-                "and total planned BTC exposure remains within cap."
-            ),
-            "planned_btc_pct_after_buy_and_open_orders": planned_pct,
-        })
+    if upside_pct > max_upside_pct:
+        return actions
+
+    if downside_planned_pct > max_downside_pct:
+        return actions
+
+    actions.append({
+        "key": "BUY_SMALL_CONFIRMATION_WITH_LADDER",
+        "type": "buy",
+        "signal": "BUY SMALL / BULLISH CONFIRMATION WITH LADDER ACTIVE",
+        "max_buy_usdt": max_buy,
+        "max_sell_btc_pct_of_holdings": 0,
+        "exposure_tier": exposure_tier.get("name"),
+        "tier_reason": exposure_tier.get("reason"),
+        "min_confidence_to_buy": tier_min_confidence,
+        "max_upside_btc_pct_after_buy": max_upside_pct,
+        "max_downside_planned_btc_pct": max_downside_pct,
+        "upside_btc_pct_after_buy": upside_pct,
+        "downside_planned_btc_pct_after_buy_and_open_orders": downside_planned_pct,
+        "reason": (
+            f"Tiered exposure policy allows a small buy under {exposure_tier.get('name')} tier. "
+            f"Upside BTC allocation after buy: {upside_pct:.1f}% / cap {max_upside_pct:.1f}%. "
+            f"Downside planned BTC allocation if open orders fill: {downside_planned_pct:.1f}% / cap {max_downside_pct:.1f}%."
+        ),
+    })
 
     return actions
 
@@ -1199,14 +1333,18 @@ def apply_gemini_decision_with_guards(
         if max_buy <= 0:
             return base_decision
 
-        min_confidence = int(decision_cfg.get("min_confidence_to_buy", 80))
+        min_confidence = int(selected_action.get(
+            "min_confidence_to_buy",
+            decision_cfg.get("min_confidence_to_buy", 80),
+        ))
+
         if confidence < min_confidence:
             return {
                 "signal": "HOLD / GEMINI BUY CONFIDENCE TOO LOW",
                 "action_usdt": 0,
                 "reason": (
                     f"Gemini buy confidence {confidence}/100 is below required "
-                    f"{min_confidence}/100."
+                    f"{min_confidence}/100 for this exposure tier."
                 ),
             }
 
@@ -1223,22 +1361,39 @@ def apply_gemini_decision_with_guards(
                 "reason": "Buying would reduce USDT free balance below emergency reserve.",
             }
 
-        planned_pct = calculate_planned_btc_exposure_pct(
+        upside_pct = calculate_upside_btc_pct_after_buy(
+            portfolio=portfolio,
+            market_price=market["price"],
+            buy_usdt=buy_usdt,
+        )
+
+        downside_planned_pct = calculate_planned_btc_exposure_pct(
             config=config,
             portfolio=portfolio,
             market_price=market["price"],
             extra_buy_usdt=buy_usdt,
         )
 
-        max_planned_pct = float(decision_cfg.get("max_total_planned_btc_pct", 45))
+        max_upside_pct = float(selected_action.get("max_upside_btc_pct_after_buy", 35))
+        max_downside_pct = float(selected_action.get("max_downside_planned_btc_pct", 55))
 
-        if planned_pct > max_planned_pct:
+        if upside_pct > max_upside_pct:
             return {
-                "signal": "HOLD / GEMINI BUY BLOCKED BY PLANNED EXPOSURE",
+                "signal": "HOLD / GEMINI BUY BLOCKED BY UPSIDE EXPOSURE",
                 "action_usdt": 0,
                 "reason": (
-                    f"Planned BTC exposure would become {planned_pct:.1f}%, "
-                    f"above cap {max_planned_pct:.1f}%."
+                    f"Upside BTC allocation after buy would become {upside_pct:.1f}%, "
+                    f"above tier cap {max_upside_pct:.1f}%."
+                ),
+            }
+
+        if downside_planned_pct > max_downside_pct:
+            return {
+                "signal": "HOLD / GEMINI BUY BLOCKED BY DOWNSIDE PLANNED EXPOSURE",
+                "action_usdt": 0,
+                "reason": (
+                    f"Downside planned BTC allocation if open orders fill would become "
+                    f"{downside_planned_pct:.1f}%, above tier cap {max_downside_pct:.1f}%."
                 ),
             }
 
@@ -1247,7 +1402,9 @@ def apply_gemini_decision_with_guards(
             "action_usdt": buy_usdt,
             "reason": (
                 f"Gemini selected {action_key} with {confidence}/100 confidence. "
-                f"Risk guard approved. Planned BTC exposure after buy and open orders: {planned_pct:.1f}%."
+                f"Risk guard approved under {selected_action.get('exposure_tier', 'unknown')} tier. "
+                f"Upside BTC allocation after buy: {upside_pct:.1f}%. "
+                f"Downside planned BTC allocation if open orders fill: {downside_planned_pct:.1f}%."
             ),
         }
 
@@ -2260,6 +2417,12 @@ def build_rule_summary_for_llm(
         portfolio=portfolio,
     )
 
+    exposure_tier = get_gemini_exposure_tier(
+        config=config,
+        market=market,
+        has_open_orders=bool(open_orders),
+    )
+
     return {
         "market": {
             "price": market["price"],
@@ -2289,6 +2452,7 @@ def build_rule_summary_for_llm(
             "emergency_usdt_reserve": config["portfolio"]["emergency_usdt_reserve"],
         },
         "btc_cost_basis_computed": cost_basis,
+        "exposure_tier_computed": exposure_tier,
         "base_rule_decision": decision,
         "open_orders": open_orders[:5],
         "intrahour_order_events": intrahour_order_events or {},
@@ -2466,7 +2630,11 @@ Decision rules:
 - If open orders are active, a buy action is allowed only when BUY_SMALL_CONFIRMATION_WITH_LADDER is present in candidate_actions.
 - Treat BUY_SMALL_CONFIRMATION_WITH_LADDER as upside participation, not FOMO.
 - Existing lower limit orders remain a downside ladder.
-- Explain planned exposure risk if choosing a buy action.
+- If choosing a buy action, respect the selected exposure_tier.
+- For early_confirmation tier, be stricter: buy only if momentum is constructive but not overheated.
+- For confirmed_breakout tier, a larger buy is allowed only if the action max_buy_usdt allows it.
+- Explain both upside_btc_pct_after_buy and downside_planned_btc_pct_after_buy_and_open_orders if choosing a buy action.
+- Do not recommend buy if exposure_tier is overheated or HOLD_OVERHEATED_NO_FOMO is present.
 - Sell actions are for planned take-profit or rebalancing only, not panic.
 - Do not estimate or invent average entry price yourself.
 - Use btc_cost_basis_computed only if available=true.
