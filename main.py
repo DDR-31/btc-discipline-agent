@@ -1648,7 +1648,7 @@ def format_gemini_decision_text(config, gemini_review, candidate_actions, final_
     decision_cfg = config.get("gemini_decision", {})
 
     if not decision_cfg.get("enabled", False):
-        return "Gemini-assisted decision: disabled"
+        return "Gemini analysis: disabled"
 
     if not gemini_review or not gemini_review.get("available", False):
         error = ""
@@ -1657,32 +1657,56 @@ def format_gemini_decision_text(config, gemini_review, candidate_actions, final_
 
         if error:
             return (
-                "Gemini-assisted decision unavailable. Final decision follows rule engine.\n"
+                "Status: unavailable\n"
+                "Final decision source: guardrail baseline\n"
                 f"Error: {error}"
             )
 
-        return "Gemini-assisted decision unavailable. Final decision follows rule engine."
+        return (
+            "Status: unavailable\n"
+            "Final decision source: guardrail baseline"
+        )
 
     action_key = gemini_review.get("recommended_action_key", "HOLD")
     buy_usdt = float(gemini_review.get("recommended_buy_usdt", 0) or 0)
     sell_pct = float(gemini_review.get("recommended_sell_btc_pct_of_holdings", 0) or 0)
     confidence = gemini_review.get("confidence_score", 0)
-    mode = "FINAL DECISION ENABLED" if decision_cfg.get("affect_final_decision", False) else "ADVICE ONLY"
 
-    allowed_keys = [action.get("key") for action in candidate_actions]
+    mode = (
+        "enabled - can affect final decision"
+        if decision_cfg.get("affect_final_decision", False)
+        else "advice only - cannot affect final decision"
+    )
+
+    selected_action = None
+    for action in candidate_actions:
+        if action.get("key") == action_key:
+            selected_action = action
+            break
+
+    exposure_tier = "-"
+    tier_reason = ""
+
+    if selected_action:
+        exposure_tier = selected_action.get("exposure_tier", "-")
+        tier_reason = selected_action.get("tier_reason", "")
 
     lines = [
         f"Mode: {mode}",
-        f"Gemini recommended: {action_key}",
+        f"Selected action: {action_key}",
+        f"Confidence: {confidence}/100",
         f"Recommended buy: {buy_usdt:.2f} USDT",
         f"Recommended sell: {sell_pct:.1f}% of BTC holdings",
-        f"Confidence: {confidence}/100",
-        f"Allowed actions: {', '.join(allowed_keys)}",
-        f"Final signal: {final_decision.get('signal')}",
+        f"Exposure tier: {exposure_tier}",
     ]
 
+    if tier_reason:
+        lines.append(f"Tier reason: {tier_reason}")
+
+    lines.append(f"Final signal after guard: {final_decision.get('signal')}")
+
     if not decision_cfg.get("affect_final_decision", False):
-        lines.append("Note: Gemini recommendation is not changing final decision yet because affect_final_decision=false.")
+        lines.append("Note: Gemini is not changing the final decision because affect_final_decision=false.")
 
     return "\n".join(lines)
 
@@ -3319,20 +3343,150 @@ def build_scenario_text(portfolio):
 # Message formatting
 # ============================================================
 
-def format_open_orders(open_orders):
-    if not open_orders:
-        return "Open orders: 0"
+def format_action_key_line(action):
+    key = action.get("key", "UNKNOWN")
+    action_type = action.get("type", "hold")
+    max_buy = float(action.get("max_buy_usdt", 0) or 0)
+    max_sell_pct = float(action.get("max_sell_btc_pct_of_holdings", 0) or 0)
 
-    lines = [f"Open orders: {len(open_orders)}"]
-    for order in open_orders[:5]:
-        side = order.get("side")
-        order_type = order.get("type")
-        price = order.get("price")
-        amount = order.get("amount")
-        status = order.get("status")
-        lines.append(f"- {side} {order_type} @ {price} | amount {amount} | {status}")
+    if action_type == "buy":
+        tier = action.get("exposure_tier", "-")
+        return f"- {key} | buy up to {max_buy:.2f} USDT | tier: {tier}"
+
+    if action_type == "sell":
+        return f"- {key} | sell up to {max_sell_pct:.1f}% of BTC holdings"
+
+    return f"- {key}"
+
+
+def format_allowed_actions(candidate_actions):
+    if not candidate_actions:
+        return "Allowed actions: none"
+
+    lines = ["Allowed actions:"]
+    for action in candidate_actions:
+        lines.append(format_action_key_line(action))
 
     return "\n".join(lines)
+
+
+def find_buy_candidate(candidate_actions):
+    for action in candidate_actions or []:
+        if action.get("key") == "BUY_SMALL_CONFIRMATION_WITH_LADDER":
+            return action
+
+    return None
+
+
+def find_selected_candidate(candidate_actions, gemini_review):
+    if not gemini_review:
+        return None
+
+    selected_key = gemini_review.get("recommended_action_key")
+    if not selected_key:
+        return None
+
+    for action in candidate_actions or []:
+        if action.get("key") == selected_key:
+            return action
+
+    return None
+
+
+def format_guardrail_check(config, market, portfolio, base_decision,
+                           candidate_actions, open_orders, intrahour_order_events):
+    """
+    Human-readable guardrail summary.
+
+    This replaces the old "Rule Engine" section.
+    Rule engine is now presented as baseline protection + allowed action builder,
+    not as the final recommendation when Gemini final decision mode is enabled.
+    """
+    candidate_actions = candidate_actions or []
+    open_orders = open_orders or []
+    intrahour_order_events = intrahour_order_events or {}
+
+    has_open_orders = bool(open_orders)
+    possible_fill = bool(intrahour_order_events.get("has_possible_fill", False))
+
+    target_min = float(config["portfolio"]["target_btc_min_pct"])
+    target_max = float(config["portfolio"]["target_btc_max_pct"])
+    btc_pct = float(portfolio.get("btc_pct", 0) or 0)
+
+    if btc_pct < target_min:
+        allocation_status = "below target"
+    elif btc_pct > target_max:
+        allocation_status = "above target"
+    else:
+        allocation_status = "within target"
+
+    buy_candidate = find_buy_candidate(candidate_actions)
+
+    if buy_candidate:
+        buy_gate_status = "open"
+        exposure_tier = buy_candidate.get("exposure_tier", "-")
+        upside_pct = buy_candidate.get("upside_btc_pct_after_buy")
+        downside_pct = buy_candidate.get("downside_planned_btc_pct_after_buy_and_open_orders")
+
+        exposure_text = (
+            f"Exposure tier: {exposure_tier}\n"
+            f"Upside BTC allocation after buy: {upside_pct:.1f}%\n"
+            f"Downside planned BTC allocation if open orders fill: {downside_pct:.1f}%"
+        )
+    else:
+        buy_gate_status = "closed"
+        exposure_text = "Exposure tier: no buy candidate"
+
+    lines = [
+        "Safety: manual-only; no auto trade, no cancel, no withdrawal.",
+        f"Baseline guard: {base_decision.get('signal')}",
+        (
+            "Baseline meaning: open orders block extra buy by default, "
+            "unless a guarded bullish-confirmation candidate is available."
+        ),
+        f"Open orders active: {'yes' if has_open_orders else 'no'}",
+        f"Possible fill detected: {'yes - verify Tokocrypto first' if possible_fill else 'no'}",
+        f"BTC allocation status: {allocation_status} ({btc_pct:.1f}% vs target {target_min:.0f}-{target_max:.0f}%)",
+        f"Buy gate: {buy_gate_status}",
+        exposure_text,
+        format_allowed_actions(candidate_actions),
+    ]
+
+    return "\n".join(lines)
+
+
+def format_manual_execution_plan(decision):
+    signal = str(decision.get("signal", "")).upper()
+    action_usdt = float(decision.get("action_usdt", 0) or 0)
+
+    if "BUY" in signal and action_usdt > 0:
+        return (
+            f"Manual plan: buy BTC worth {action_usdt:.2f} USDT only.\n"
+            "Do not exceed the recommended size.\n"
+            "Do not cancel existing 58k/60k ladder orders.\n"
+            "After execution, update config_git.yaml portfolio values."
+        )
+
+    if "SELL" in signal and decision.get("sell_btc") is not None:
+        return (
+            f"Manual plan: sell approximately {decision.get('sell_btc', 0):.8f} BTC "
+            f"(~{decision.get('sell_usdt_estimate', 0):.2f} USDT).\n"
+            "Do not exceed the recommended sell size.\n"
+            "After execution, update config_git.yaml portfolio values."
+        )
+
+    if "VERIFY POSSIBLE FILLED ORDER" in signal:
+        return (
+            "Manual plan: verify Tokocrypto first.\n"
+            "Do not buy again until the possible fill is confirmed or rejected.\n"
+            "Update config_git.yaml if any order was actually filled."
+        )
+
+    return (
+        "Manual plan: no new transaction.\n"
+        "Keep existing ladder orders unless you manually decide to revise them.\n"
+        "Wait for the next clean signal."
+    )
 
 
 def build_message(config, market, portfolio, decision,
@@ -3366,12 +3520,26 @@ def build_message(config, market, portfolio, decision,
 
     base_decision = base_decision or decision
     candidate_actions = candidate_actions or []
+    gemini_review = gemini_review or {}
+
+    guardrail_text = format_guardrail_check(
+        config=config,
+        market=market,
+        portfolio=portfolio,
+        base_decision=base_decision,
+        candidate_actions=candidate_actions,
+        open_orders=open_orders or [],
+        intrahour_order_events=intrahour_order_events or {},
+    )
+
     gemini_decision_text = format_gemini_decision_text(
         config=config,
-        gemini_review=gemini_review or {},
+        gemini_review=gemini_review,
         candidate_actions=candidate_actions,
         final_decision=decision,
     )
+
+    manual_execution_plan = format_manual_execution_plan(decision)
 
     llm_routing = config.get("_last_llm_routing")
 
@@ -3442,18 +3610,19 @@ def build_message(config, market, portfolio, decision,
         f"<b>Recent Price Check</b>\n"
         f"{esc(intrahour_events_text)}\n\n"
 
-        f"<b>Rule Engine</b>\n"
-        f"Base signal: <b>{esc(base_decision['signal'])}</b>\n"
-        f"Base action: <b>{format_decision_action(base_decision)}</b>\n"
-        f"Base reason: {esc(base_decision['reason'])}\n\n"
+        f"<b>Guardrail Check</b>\n"
+        f"{esc(guardrail_text)}\n\n"
 
-        f"<b>Gemini-Assisted Decision</b>\n"
+        f"<b>Gemini Analysis</b>\n"
         f"{esc(gemini_decision_text)}\n\n"
 
-        f"<b>Decision</b>\n"
+        f"<b>Final Decision</b>\n"
         f"Signal: <b>{esc(decision['signal'])}</b>\n"
         f"Recommended action: <b>{format_decision_action(decision)}</b>\n"
         f"Reason: {esc(decision['reason'])}\n\n"
+
+        f"<b>Manual Execution Plan</b>\n"
+        f"{esc(manual_execution_plan)}\n\n"
 
         f"<b>Mental rule</b>\n"
         f"Jangan FOMO, jangan revenge trade.\n\n"
