@@ -61,6 +61,51 @@ manual_open_orders:
       allocated_usdt: 30.00
       status: open
 
+manual_executions:
+  enabled: true
+
+  anti_repeat:
+    enabled: true
+
+    # Minimum time after manual buy before the same signal may be considered again.
+    cooldown_hours: 72
+
+    # Block repeated buy from the same signal key, e.g. BUY_SMALL_CONFIRMATION_WITH_LADDER.
+    block_same_signal_key: true
+
+    # Block repeated buy from the same tier, e.g. early_confirmation.
+    block_same_tier: true
+
+    # Same-tier buy is allowed again only if price moves enough from last buy.
+    # For a buy, this mainly means a meaningful pullback from last buy price.
+    require_price_move_pct_for_same_tier_buy: 2.0
+
+    # Allow new buy if signal tier upgrades from early_confirmation to confirmed_breakout.
+    allow_new_buy_if_tier_upgrades: true
+
+    # If true, manual execution history can block repeat buy before Gemini sees candidates.
+    block_before_gemini: true
+
+  entries:
+    - id: "2026-06-13-buy-63700-001"
+      status: filled
+      side: buy
+      order_type: limit
+
+      source_signal_key: "BUY_SMALL_CONFIRMATION_WITH_LADDER"
+      source_tier: "early_confirmation"
+
+      limit_price_usdt: 63700
+      avg_fill_price_usdt: 63838.01
+      quote_spent_usdt: 14.68274230
+      base_received_btc: 0.00022912
+      fee_btc: 0
+
+      placed_at_utc: "2026-06-13T00:00:00Z"
+      executed_at_utc: "2026-06-13T00:00:00Z"
+      related_open_order_price: null
+      note: "Executed Gemini early-confirmation buy signal manually"
+
 intrahour_price_check:
   enabled: true
   source: "coingecko_market_chart"

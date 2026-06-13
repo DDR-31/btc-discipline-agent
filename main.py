@@ -903,6 +903,188 @@ def get_tiered_max_buy_usdt(exposure_tier, has_open_orders):
 
     return float(settings.get("max_buy_usdt_without_open_orders", 0) or 0)
 
+def parse_utc_datetime(value):
+    if not value:
+        return None
+
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(text)
+    except Exception:
+        return None
+
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc)
+
+
+def get_manual_execution_entries(config):
+    manual_exec_cfg = config.get("manual_executions", {})
+
+    if not manual_exec_cfg.get("enabled", False):
+        return []
+
+    entries = manual_exec_cfg.get("entries", [])
+    if not isinstance(entries, list):
+        return []
+
+    return entries
+
+
+def get_latest_filled_manual_buy(config):
+    entries = get_manual_execution_entries(config)
+
+    filled_buys = []
+
+    for entry in entries:
+        if str(entry.get("status", "")).lower() != "filled":
+            continue
+
+        if str(entry.get("side", "")).lower() != "buy":
+            continue
+
+        executed_at = parse_utc_datetime(entry.get("executed_at_utc"))
+        if executed_at is None:
+            continue
+
+        avg_fill_price = float(entry.get("avg_fill_price_usdt", 0) or 0)
+        quote_spent = float(entry.get("quote_spent_usdt", 0) or 0)
+        base_received = float(entry.get("base_received_btc", 0) or 0)
+
+        if avg_fill_price <= 0 or quote_spent <= 0 or base_received <= 0:
+            continue
+
+        normalized = dict(entry)
+        normalized["_executed_at_dt"] = executed_at
+        normalized["_avg_fill_price_usdt"] = avg_fill_price
+        normalized["_quote_spent_usdt"] = quote_spent
+        normalized["_base_received_btc"] = base_received
+
+        filled_buys.append(normalized)
+
+    if not filled_buys:
+        return None
+
+    filled_buys.sort(key=lambda item: item["_executed_at_dt"], reverse=True)
+    return filled_buys[0]
+
+
+def evaluate_manual_buy_anti_repeat(config, market, exposure_tier, candidate_action_key):
+    """
+    Prevent repeated manual buys from the same signal/tier.
+
+    This guard runs before Gemini receives BUY candidate actions.
+    It only blocks a new buy candidate. It does not affect sell/hold actions.
+    """
+    manual_exec_cfg = config.get("manual_executions", {})
+    anti_cfg = manual_exec_cfg.get("anti_repeat", {})
+
+    result = {
+        "blocked": False,
+        "reason": "",
+        "latest_buy": None,
+        "hours_since_last_buy": None,
+        "price_move_pct_from_last_buy": None,
+    }
+
+    if not manual_exec_cfg.get("enabled", False):
+        return result
+
+    if not anti_cfg.get("enabled", False):
+        return result
+
+    if not anti_cfg.get("block_before_gemini", True):
+        return result
+
+    latest_buy = get_latest_filled_manual_buy(config)
+    if not latest_buy:
+        return result
+
+    result["latest_buy"] = latest_buy
+
+    now_utc = datetime.now(timezone.utc)
+    executed_at = latest_buy["_executed_at_dt"]
+    hours_since = (now_utc - executed_at).total_seconds() / 3600
+    result["hours_since_last_buy"] = hours_since
+
+    current_price = float(market.get("price", 0) or 0)
+    last_buy_price = float(latest_buy.get("_avg_fill_price_usdt", 0) or 0)
+
+    price_move_pct = 0.0
+    if current_price > 0 and last_buy_price > 0:
+        price_move_pct = ((current_price - last_buy_price) / last_buy_price) * 100
+
+    result["price_move_pct_from_last_buy"] = price_move_pct
+
+    last_signal_key = str(latest_buy.get("source_signal_key", ""))
+    last_tier = str(latest_buy.get("source_tier", ""))
+    current_tier = str((exposure_tier or {}).get("name", ""))
+
+    cooldown_hours = float(anti_cfg.get("cooldown_hours", 72) or 72)
+    block_same_signal_key = bool(anti_cfg.get("block_same_signal_key", True))
+    block_same_tier = bool(anti_cfg.get("block_same_tier", True))
+    require_price_move_pct = float(
+        anti_cfg.get("require_price_move_pct_for_same_tier_buy", 2.0) or 2.0
+    )
+    allow_new_buy_if_tier_upgrades = bool(
+        anti_cfg.get("allow_new_buy_if_tier_upgrades", True)
+    )
+
+    same_signal = (
+        block_same_signal_key
+        and last_signal_key
+        and candidate_action_key == last_signal_key
+    )
+
+    same_tier = (
+        block_same_tier
+        and last_tier
+        and current_tier
+        and current_tier == last_tier
+    )
+
+    tier_upgraded = (
+        allow_new_buy_if_tier_upgrades
+        and last_tier == "early_confirmation"
+        and current_tier == "confirmed_breakout"
+    )
+
+    meaningful_pullback = price_move_pct <= -abs(require_price_move_pct)
+
+    if tier_upgraded:
+        return result
+
+    if same_signal and hours_since < cooldown_hours:
+        result["blocked"] = True
+        result["reason"] = (
+            f"Manual buy anti-repeat: {candidate_action_key} was already executed "
+            f"{hours_since:.1f}h ago. Cooldown is {cooldown_hours:.1f}h."
+        )
+        return result
+
+    if same_tier and not meaningful_pullback:
+        result["blocked"] = True
+        result["reason"] = (
+            f"Manual buy anti-repeat: last filled manual buy was also tier "
+            f"{last_tier}. Current price move from last buy is {price_move_pct:.2f}%, "
+            f"but same-tier repeat requires at least -{require_price_move_pct:.2f}% pullback "
+            f"or tier upgrade."
+        )
+        return result
+
+    return result
 
 def calculate_btc_pct_after_sell(portfolio, market_price, sell_btc):
     btc_now = float(portfolio.get("btc", 0) or 0)
