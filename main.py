@@ -3536,13 +3536,67 @@ def format_guardrail_check(config, market, portfolio, base_decision,
     return "\n".join(lines)
 
 
-def format_manual_execution_plan(decision):
+def format_manual_execution_plan(config, market, decision):
     signal = str(decision.get("signal", "")).upper()
     action_usdt = float(decision.get("action_usdt", 0) or 0)
 
+    execution_cfg = config.get("manual_execution", {})
+
+    buy_order_type_preference = str(
+        execution_cfg.get("buy_order_type_preference", "limit")
+    ).lower()
+
+    limit_buy_offset_pct = float(
+        execution_cfg.get("limit_buy_offset_pct", 0.15) or 0.15
+    )
+
+    allow_market_buy_for_small_size = bool(
+        execution_cfg.get("allow_market_buy_for_small_size", True)
+    )
+
+    market_buy_max_usdt = float(
+        execution_cfg.get("market_buy_max_usdt", 15) or 15
+    )
+
+    max_acceptable_market_spread_pct = float(
+        execution_cfg.get("max_acceptable_market_spread_pct", 0.10) or 0.10
+    )
+
+    limit_expiry_guidance_minutes = int(
+        execution_cfg.get("limit_expiry_guidance_minutes", 15) or 15
+    )
+
+    market_price = float(market.get("price", 0) or 0)
+
     if "BUY" in signal and action_usdt > 0:
+        estimated_btc = action_usdt / market_price if market_price > 0 else 0
+        suggested_limit_price = market_price * (1 - limit_buy_offset_pct / 100) if market_price > 0 else 0
+
+        if buy_order_type_preference == "market":
+            order_type_line = (
+                "Preferred order type: MARKET BUY, only because config says market is preferred."
+            )
+        else:
+            order_type_line = (
+                "Preferred order type: LIMIT BUY."
+            )
+
+        market_buy_note = "Market buy: not preferred."
+
+        if allow_market_buy_for_small_size and action_usdt <= market_buy_max_usdt:
+            market_buy_note = (
+                f"Market buy: acceptable only if Tokocrypto spread is very tight "
+                f"(≤ {max_acceptable_market_spread_pct:.2f}%) and you want immediate fill."
+            )
+
         return (
             f"Manual plan: buy BTC worth {action_usdt:.2f} USDT only.\n"
+            f"{order_type_line}\n"
+            f"Suggested limit price: ${suggested_limit_price:,.0f} "
+            f"(~{limit_buy_offset_pct:.2f}% below report price ${market_price:,.0f}).\n"
+            f"Estimated BTC if filled near report price: {estimated_btc:.8f} BTC.\n"
+            f"{market_buy_note}\n"
+            f"If the limit order is not filled within ~{limit_expiry_guidance_minutes} minutes, do not chase; wait for the next bot run.\n"
             "Do not exceed the recommended size.\n"
             "Do not cancel existing 58k/60k ladder orders.\n"
             "After execution, update config_git.yaml portfolio values."
@@ -3552,6 +3606,8 @@ def format_manual_execution_plan(decision):
         return (
             f"Manual plan: sell approximately {decision.get('sell_btc', 0):.8f} BTC "
             f"(~{decision.get('sell_usdt_estimate', 0):.2f} USDT).\n"
+            "Preferred order type: LIMIT SELL near current bid/ask area.\n"
+            "Do not use market sell unless you intentionally accept slippage.\n"
             "Do not exceed the recommended sell size.\n"
             "After execution, update config_git.yaml portfolio values."
         )
@@ -3620,7 +3676,11 @@ def build_message(config, market, portfolio, decision,
         final_decision=decision,
     )
 
-    manual_execution_plan = format_manual_execution_plan(decision)
+    manual_execution_plan = format_manual_execution_plan(
+    config=config,
+    market=market,
+    decision=decision,
+)
 
     llm_routing = config.get("_last_llm_routing")
 

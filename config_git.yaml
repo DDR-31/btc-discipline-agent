@@ -1,8 +1,8 @@
 symbol: BTC/USDT
 
 portfolio:
-  usdt: 245.95080653
-  btc: 0.00105733
+  usdt: 231.26806423
+  btc: 0.00128645
   target_btc_min_pct: 50
   target_btc_max_pct: 75
   max_single_buy_usdt: 60
@@ -78,35 +78,72 @@ gemini_decision:
   allowed_to_recommend_buy: true
   allow_buy_with_open_orders: true
 
-  # More responsive upside participation, but still small.
-  max_buy_usdt_with_open_orders: 15
-  max_buy_usdt_without_open_orders: 40
-
   min_confidence_to_buy: 80
   min_confidence_to_sell: 80
 
   min_usdt_free_after_buy: 150
-
-  # Includes current BTC + all open buy orders + Gemini extra buy.
-  max_total_planned_btc_pct: 45
   require_btc_below_target_min: true
 
   block_buy_if_possible_fill_detected: true
   block_buy_if_panic_or_dump: true
-  block_buy_if_24h_pump_above_pct: 4
 
   bullish_confirmation:
     require_price_above_ma7: true
-
-    # Responsive mode:
-    # buy candidate can appear above MA7 even if still below MA20.
     require_price_above_ma20: false
     confirmation_above_ma20_pct: 1.5
     allow_if_price_above_ma7_but_below_ma20: true
 
+  exposure_policy:
+    enabled: true
+
+    early_confirmation:
+      description: "BTC above MA7 but still below confirmed MA20 breakout"
+      max_buy_usdt_with_open_orders: 15
+      max_buy_usdt_without_open_orders: 25
+      max_upside_btc_pct_after_buy: 35
+      max_downside_planned_btc_pct: 55
+      min_confidence_to_buy: 85
+
+    confirmed_breakout:
+      description: "BTC above MA20 with confirmation"
+      max_buy_usdt_with_open_orders: 25
+      max_buy_usdt_without_open_orders: 40
+      max_upside_btc_pct_after_buy: 45
+      max_downside_planned_btc_pct: 60
+      min_confidence_to_buy: 80
+
+    overheated:
+      description: "BTC pumping too fast; block fresh buy"
+      block_buy_if_24h_pump_above_pct: 4
+      max_buy_usdt_with_open_orders: 0
+      max_buy_usdt_without_open_orders: 0
+
 btc_cost_basis:
-  enabled: false
-  avg_entry_price: 0
+  enabled: true
+  method: "manual_lots"
+
+  # Bot hanya akan mengaktifkan take-profit sell kalau manual lots
+  # mencakup minimal 90% dari BTC yang ada di portfolio config.
+  min_coverage_pct: 90
+
+  manual_lots:
+    - side: buy
+      amount_btc: 0.00065733
+      price_usdt: 81000
+      fee_btc: 0
+      note: "Initial BTC entry around 5 May 2026"
+
+    - side: buy
+      amount_btc: 0.00040
+      price_usdt: 61000
+      fee_btc: 0
+      note: "Filled buy limit at 61000"
+
+    - side: buy
+      amount_btc: 0.00022912
+      price_usdt: 63838.01
+      fee_btc: 0
+      note: "Gemini early-confirmation manual buy around 63700"
 
 sell_strategy:
   enabled: true
@@ -134,6 +171,14 @@ sell_strategy:
     enabled: false
     sell_if_price_below_ma20_pct: 3
     sell_pct_of_holdings: 15
+
+manual_execution:
+  buy_order_type_preference: "limit"
+  limit_buy_offset_pct: 0.15
+  allow_market_buy_for_small_size: true
+  market_buy_max_usdt: 15
+  max_acceptable_market_spread_pct: 0.10
+  limit_expiry_guidance_minutes: 15
 
 safety:
   allow_trading: false
