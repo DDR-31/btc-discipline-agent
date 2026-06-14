@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-#CONFIG_FILE = "config_git.yaml"
 CONFIG_FILE = os.getenv("BTC_AGENT_CONFIG", "config_git.yaml")
 
 # ============================================================
