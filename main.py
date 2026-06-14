@@ -3784,6 +3784,7 @@ Data:
         "generationConfig": {
             "temperature": temperature,
             "maxOutputTokens": analyst_max_tokens,
+            "responseMimeType": "application/json",
         },
     }
 
