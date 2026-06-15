@@ -140,7 +140,7 @@ gemini_decision:
   min_confidence_to_buy: 80
   min_confidence_to_sell: 80
 
-  min_usdt_free_after_buy: 150
+  min_usdt_free_after_buy: 100
   require_btc_below_target_min: true
 
   block_buy_if_possible_fill_detected: true
@@ -279,7 +279,7 @@ adaptive_pullback_limit:
   min_gap_above_highest_open_buy_pct: 2.0
 
   # Reserve and exposure guards.
-  min_usdt_free_after_order: 150
+  min_usdt_free_after_order: 100
   max_upside_btc_pct_after_fill: 35
   max_downside_planned_btc_pct_after_fill: 55
   min_confidence_to_place: 85
