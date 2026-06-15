@@ -49,23 +49,23 @@ manual_open_orders:
   orders:
     - side: buy
       type: limit
-      price: 58000
-      amount: 0.00051
-      allocated_usdt: 29.58
-      status: open
-
-    - side: buy
-      type: limit
-      price: 60000
-      amount: 0.00050
-      allocated_usdt: 30.00
-      status: open
-
-    - side: buy
-      type: limit
       price: 62561
       amount: 0.00023
       allocated_usdt: 14.38903
+      status: open
+
+    - side: buy
+      type: limit
+      price: 65000
+      amount: 0.00046
+      allocated_usdt: 29.9
+      status: open
+
+    - side: buy
+      type: limit
+      price: 66000
+      amount: 0.00054
+      allocated_usdt: 35.64
       status: open
 
 manual_executions:
