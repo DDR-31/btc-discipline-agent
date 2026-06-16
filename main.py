@@ -265,17 +265,51 @@ def get_24h_ticker(symbol):
 
 def get_daily_klines(symbol, days=30):
     """
-    Untuk historical daily data, kita pakai CoinGecko agar stabil.
-    Tokocrypto/CCXT OHLCV bisa bermasalah karena routing endpoint.
+    Untuk historical daily data, prioritas utama menggunakan Binance Vision API.
+    Jika Binance gagal, fallback otomatis ke CoinGecko market_chart agar stabil.
     """
-    url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
-    params = {
+    try:
+        # Prioritas: Binance Vision API
+        binance_url = "https://data-api.binance.vision/api/v3/klines"
+        binance_params = {
+            "symbol": "BTCUSDT",
+            "interval": "1d",
+            "limit": days,
+        }
+        
+        # Sleep kecil untuk mencegah rate limit Binance public
+        time.sleep(1)
+        response = requests.get(binance_url, params=binance_params, timeout=15)
+        
+        if response.ok:
+            data = response.json()
+            rows = []
+            for k in data:
+                rows.append({
+                    "time": pd.to_datetime(k[0], unit="ms"),
+                    "open": float(k[1]),
+                    "high": float(k[2]),
+                    "low": float(k[3]),
+                    "close": float(k[4]),
+                    "volume": float(k[5]),
+                })
+            df = pd.DataFrame(rows)
+            return df.tail(days).reset_index(drop=True)
+        else:
+            print(f"[WARN] Binance Vision daily klines failed ({response.status_code}), fallback to CoinGecko...")
+            
+    except Exception as e:
+        print(f"[WARN] Binance Vision daily klines exception: {e}, fallback to CoinGecko...")
+
+    # Fallback: CoinGecko
+    cg_url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+    cg_params = {
         "vs_currency": "usd",
         "days": days,
         "interval": "daily",
     }
 
-    data = requests.get(url, params=params, timeout=25).json()
+    data = requests.get(cg_url, params=cg_params, timeout=25).json()
     prices = data["prices"]
 
     rows = []
@@ -298,12 +332,11 @@ def get_daily_klines(symbol, days=30):
 
 def get_recent_intrahour_price_window(config):
     """
-    Fetch recent CoinGecko market chart data to detect whether BTC touched
+    Fetch recent market data to detect whether BTC touched
     manual open-order levels between hourly bot runs.
-
-    Important:
-    This does NOT confirm Tokocrypto execution.
-    It only detects that market price likely touched the configured order level.
+    
+    Prioritizes Binance Vision API (1m klines) for perfect wick detection.
+    Falls back to CoinGecko market_chart if Binance fails.
     """
     check_cfg = config.get("intrahour_price_check", {})
 
@@ -316,10 +349,10 @@ def get_recent_intrahour_price_window(config):
             "rows": [],
         }
 
-    source = check_cfg.get("source", "coingecko_market_chart")
+    source = check_cfg.get("source", "binance_vision_klines")
     lookback_minutes = int(check_cfg.get("lookback_minutes", 90))
 
-    if source != "coingecko_market_chart":
+    if source not in ["binance_vision_klines", "coingecko_market_chart"]:
         return {
             "enabled": True,
             "available": False,
@@ -328,71 +361,110 @@ def get_recent_intrahour_price_window(config):
             "rows": [],
         }
 
-    url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
-    params = {
+    now_utc = datetime.now(timezone.utc)
+    cutoff_utc = now_utc - pd.Timedelta(minutes=lookback_minutes)
+    
+    # --- Try Binance Vision API First ---
+    try:
+        binance_url = "https://data-api.binance.vision/api/v3/klines"
+        binance_params = {
+            "symbol": "BTCUSDT",
+            "interval": "1m",
+            "limit": lookback_minutes,
+        }
+        
+        time.sleep(1) # Prevent rate limit
+        response = requests.get(binance_url, params=binance_params, timeout=15)
+        
+        if response.ok:
+            data = response.json()
+            if data:
+                rows = []
+                for k in data:
+                    timestamp_utc = pd.to_datetime(k[0], unit="ms", utc=True)
+                    if timestamp_utc < cutoff_utc:
+                        continue
+                    rows.append({
+                        "time_utc": timestamp_utc,
+                        "open": float(k[1]),
+                        "high": float(k[2]), # Real high wick
+                        "low": float(k[3]),  # Real low wick
+                        "price": float(k[4]), # Close acts as standard price
+                    })
+                
+                if rows:
+                    df = pd.DataFrame(rows)
+                    return {
+                        "enabled": True,
+                        "available": True,
+                        "source": "binance_vision_klines",
+                        "lookback_minutes": lookback_minutes,
+                        "window_start_utc": df["time_utc"].min().isoformat(),
+                        "window_end_utc": df["time_utc"].max().isoformat(),
+                        "window_low": float(df["low"].min()),   # Use real low wick
+                        "window_high": float(df["high"].max()), # Use real high wick
+                        "last_price_in_window": float(df["price"].iloc[-1]),
+                        "rows": rows,
+                    }
+        else:
+            print(f"[WARN] Binance Vision intrahour failed ({response.status_code}), fallback to CoinGecko...")
+            
+    except Exception as e:
+        print(f"[WARN] Binance Vision intrahour exception: {e}, fallback to CoinGecko...")
+
+    # --- Fallback: CoinGecko ---
+    cg_url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+    cg_params = {
         "vs_currency": "usd",
         "days": 1,
     }
 
     try:
-        response = requests.get(url, params=params, timeout=25)
+        response = requests.get(cg_url, params=cg_params, timeout=25)
 
         if not response.ok:
             return {
                 "enabled": True,
                 "available": False,
-                "source": source,
-                "message": f"CoinGecko intrahour market chart failed: {response.status_code} {response.text[:300]}",
+                "source": "coingecko_fallback",
+                "message": f"CoinGecko fallback failed: {response.status_code}",
                 "rows": [],
             }
 
         data = response.json()
         prices = data.get("prices", [])
 
-        if not prices:
-            return {
-                "enabled": True,
-                "available": False,
-                "source": source,
-                "message": "CoinGecko intrahour market chart returned no prices.",
-                "rows": [],
-            }
-
-        now_utc = datetime.now(timezone.utc)
-        cutoff_utc = now_utc - pd.Timedelta(minutes=lookback_minutes)
-
         rows = []
         for timestamp_ms, price in prices:
             timestamp_utc = pd.to_datetime(timestamp_ms, unit="ms", utc=True)
-
             if timestamp_utc < cutoff_utc:
                 continue
-
             rows.append({
                 "time_utc": timestamp_utc,
                 "price": float(price),
+                "low": float(price),
+                "high": float(price),
             })
 
         if not rows:
             return {
                 "enabled": True,
                 "available": False,
-                "source": source,
-                "message": "No CoinGecko prices inside configured lookback window.",
+                "source": "coingecko_fallback",
+                "message": "No CoinGecko prices inside window.",
                 "rows": [],
             }
 
         df = pd.DataFrame(rows)
-
         return {
             "enabled": True,
             "available": True,
-            "source": source,
+            "source": "coingecko_fallback",
             "lookback_minutes": lookback_minutes,
             "window_start_utc": df["time_utc"].min().isoformat(),
             "window_end_utc": df["time_utc"].max().isoformat(),
-            "window_low": float(df["price"].min()),
-            "window_high": float(df["price"].max()),
+            "window_low": float(df["low"].min()),
+            "window_high": float(df["high"].max()),
             "last_price_in_window": float(df["price"].iloc[-1]),
             "rows": rows,
         }
@@ -401,8 +473,8 @@ def get_recent_intrahour_price_window(config):
         return {
             "enabled": True,
             "available": False,
-            "source": source,
-            "message": f"CoinGecko intrahour price check failed: {error}",
+            "source": "coingecko_fallback",
+            "message": f"CoinGecko fallback exception: {error}",
             "rows": [],
         }
 
@@ -1225,7 +1297,6 @@ def calculate_planned_btc_exposure_pct_for_limit_buy(config, portfolio, current_
         return 0.0
 
     return planned_btc_value / total_value * 100
-
 
 def build_pullback_limit_candidate_action(
     config,
@@ -2780,7 +2851,6 @@ def decide_signal(config, market, portfolio):
         "reason": "Tidak ada setup kuat. Jangan overtrade.",
     }
 
-
 # ============================================================
 # GitHub repo reminder
 # ============================================================
@@ -3541,7 +3611,6 @@ def fetch_macro_grounding_context(config, api_key):
     except Exception as e:
         print(f"[WARN] Grounding exception: {e}")
         return "Grounding unavailable (exception)."
-
 
 def generate_gemini_explanation(
     config,
