@@ -187,40 +187,22 @@ btc_cost_basis:
 
   manual_lots:
     - side: buy
-      amount_btc: 0.00065733
-      price_usdt: 81000
-      fee_btc: 0
-      note: "Initial BTC entry around 5 May 2026"
-
-    - side: buy
-      amount_btc: 0.00176
-      price_usdt: 62218
-      fee_btc: 0
-      note: "Limit Buy 5 Juni"
-      
-    - side: buy
-      amount_btc: 0.00168
+      amount_btc: 0.00025756
       price_usdt: 62414.99
       fee_btc: 0
-      note: "Market Buy 5 Juni"
-      
-    - side: buy
-      amount_btc: 0.00172
-      price_usdt: 60500
-      fee_btc: 0
-      note: "Stop Limit 5 Juni"
-      
-    - side: buy
-      amount_btc: 0.00146
-      price_usdt: 59218
-      fee_btc: 0
-      note: "Market Buy 6 Juni"
+      note: "Remaining from Buy 5 Jun (FIFO Adjusted)"
       
     - side: buy
       amount_btc: 0.00040
       price_usdt: 61059.67
-      fee_btc: 0
+      fee_btc: 0.00000068
       note: "Market Buy 6 Juni"
+      
+    - side: buy
+      amount_btc: 0.00040
+      price_usdt: 61000
+      fee_btc: 0.00000068
+      note: "Limit Buy 9 Juni"
       
     - side: buy
       amount_btc: 0.00040
