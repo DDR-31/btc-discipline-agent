@@ -51,7 +51,7 @@ manual_open_orders:
       type: limit
       price: 66000
       amount: 0.00023
-      allocated_usdt: 15.18
+      allocated_usdt: 19.8
       status: filled
 
     - side: buy
@@ -181,8 +181,8 @@ btc_cost_basis:
   enabled: true
   method: "manual_lots"
 
-  # Bot hanya akan mengaktifkan take-profit sell kalau manual lots
-  # mencakup minimal 90% dari BTC yang ada di portfolio config.
+  # The bot will only activate take-profit sell if the manual lots cover
+  # at least 90% of the BTC in the portfolio configuration.
   min_coverage_pct: 90
 
   manual_lots:
@@ -193,10 +193,40 @@ btc_cost_basis:
       note: "Initial BTC entry around 5 May 2026"
 
     - side: buy
+      amount_btc: 0.00176
+      price_usdt: 62218
+      fee_btc: 0
+      note: "Limit Buy 5 Juni"
+      
+    - side: buy
+      amount_btc: 0.00168
+      price_usdt: 62414.99
+      fee_btc: 0
+      note: "Market Buy 5 Juni"
+      
+    - side: buy
+      amount_btc: 0.00172
+      price_usdt: 60500
+      fee_btc: 0
+      note: "Stop Limit 5 Juni"
+      
+    - side: buy
+      amount_btc: 0.00146
+      price_usdt: 59218
+      fee_btc: 0
+      note: "Market Buy 6 Juni"
+      
+    - side: buy
+      amount_btc: 0.00040
+      price_usdt: 61059.67
+      fee_btc: 0
+      note: "Market Buy 6 Juni"
+      
+    - side: buy
       amount_btc: 0.00040
       price_usdt: 61000
       fee_btc: 0
-      note: "Filled buy limit at 61000"
+      note: "Limit Buy 7 Juni"
 
     - side: buy
       amount_btc: 0.00022912
