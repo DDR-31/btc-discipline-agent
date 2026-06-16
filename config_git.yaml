@@ -1,8 +1,8 @@
 symbol: BTC/USDT
 
 portfolio:
-  usdt: 231.26806423
-  btc: 0.00128645
+  usdt: 211.46806423
+  btc: 0.0015853
   target_btc_min_pct: 50
   target_btc_max_pct: 75
   max_single_buy_usdt: 60
@@ -203,6 +203,12 @@ btc_cost_basis:
       price_usdt: 63838.01
       fee_btc: 0
       note: "Gemini early-confirmation manual buy around 63700"
+
+    - side: buy
+      amount_btc: 0.00023
+      price_usdt: 66000
+      fee_btc: 0
+      note: "Filled buy limit at 66000"
 
 sell_strategy:
   enabled: true
