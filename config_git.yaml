@@ -1,8 +1,8 @@
 symbol: BTC/USDT
 
 portfolio:
-  usdt: 211.46806423
-  btc: 0.0015853
+  usdt: 186.76806423
+  btc: 0.00196385
   target_btc_min_pct: 50
   target_btc_max_pct: 75
   max_single_buy_usdt: 60
@@ -58,14 +58,14 @@ manual_open_orders:
       type: limit
       price: 65000
       amount: 0.00043
-      allocated_usdt: 27.95
-      status: open
+      allocated_usdt: 24.7
+      status: filled
 
     - side: buy
       type: limit
       price: 62561
       amount: 0.00059
-      allocated_usdt: 36.91
+      allocated_usdt: 34.40855
       status: open
 
 manual_executions:
@@ -211,16 +211,22 @@ btc_cost_basis:
       note: "Limit Buy 7 Juni"
 
     - side: buy
-      amount_btc: 0.00022912
+      amount_btc: 0.00023
       price_usdt: 63838.01
-      fee_btc: 0
+      fee_btc: 0.00000005
       note: "Gemini early-confirmation manual buy around 63700"
 
     - side: buy
-      amount_btc: 0.00023
+      amount_btc: 0.0003
       price_usdt: 66000
-      fee_btc: 0
+      fee_btc: 0.00000006
       note: "Filled buy limit at 66000"
+
+    - side: buy
+      amount_btc: 0.00038
+      price_usdt: 65000
+      fee_btc: 0.00000056
+      note: "Limit Buy 17 Juni (Filled)"
 
 sell_strategy:
   enabled: true
