@@ -68,6 +68,13 @@ manual_open_orders:
       allocated_usdt: 34.40855
       status: filled
 
+    - side: buy
+      type: limit
+      price: 57500
+      amount: 0.00073
+      allocated_usdt: 41.975
+      status: open
+
 manual_executions:
   enabled: true
 
