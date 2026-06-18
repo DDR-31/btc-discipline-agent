@@ -1,10 +1,10 @@
 symbol: BTC/USDT
 
 portfolio:
-  usdt: 186.76806423
-  btc: 0.00196385
+  usdt: 152.35951423
+  btc: 0.00251163
   target_btc_min_pct: 50
-  target_btc_max_pct: 75
+  target_btc_max_pct: 70
   max_single_buy_usdt: 60
   emergency_usdt_reserve: 100
 
@@ -66,7 +66,7 @@ manual_open_orders:
       price: 62561
       amount: 0.00059
       allocated_usdt: 34.40855
-      status: open
+      status: filled
 
 manual_executions:
   enabled: true
@@ -227,6 +227,12 @@ btc_cost_basis:
       price_usdt: 65000
       fee_btc: 0.00000056
       note: "Limit Buy 17 Juni (Filled)"
+
+    - side: buy
+      amount_btc: 0.00055
+      price_usdt: 62561
+      fee_btc: 0.00000302
+      note: "Limit Buy 62.5k (Filled)"
 
 sell_strategy:
   enabled: true
