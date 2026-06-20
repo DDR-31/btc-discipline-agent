@@ -467,6 +467,8 @@ def get_recent_intrahour_price_window(config):
             "window_low": float(df["low"].min()),
             "window_high": float(df["high"].max()),
             "last_price_in_window": float(df["price"].iloc[-1]),
+            "wick_detection": "degraded",
+            "wick_detection_note": "CoinGecko fallback: only close prices available, wicks not detectable.",
             "rows": rows,
         }
 
@@ -748,6 +750,10 @@ def format_intrahour_order_events(intrahour_order_events):
             f"${intrahour_order_events.get('window_high'):,.0f}"
         ),
     ]
+    
+    wick_note = intrahour_order_events.get("wick_detection_note", "")
+    if wick_note:
+        lines.append(f"Note: {wick_note}")
 
     events = intrahour_order_events.get("events", [])
 
@@ -2743,9 +2749,23 @@ def decide_signal(config, market, portfolio):
     target_min = config["portfolio"]["target_btc_min_pct"]
     target_max = config["portfolio"]["target_btc_max_pct"]
     max_buy = config["portfolio"]["max_single_buy_usdt"]
-    reserve = config["portfolio"]["emergency_usdt_reserve"]
+    
+    reserves = config["portfolio"].get("reserve_architecture", {})
+    tier_1 = reserves.get("tier_1_hard_floor_usdt", 100)
+    tier_2 = reserves.get("tier_2_op_buffer_usdt", 0)
+    tier_3 = reserves.get("tier_3_tactical_usdt", 0)
+    reserve = tier_1 + tier_2
 
     btc_pct = portfolio["btc_pct"]
+    
+    # --- Capital Exhaustion Protocol ---
+    if portfolio["usdt_free"] <= tier_1:
+        return {
+            "signal": "HOLD_CAPITAL_EXHAUSTED",
+            "action_usdt": 0,
+            "reason": f"Sisa kas ({portfolio['usdt_free']:.2f} USDT) telah menyentuh Tier 1 Hard Floor ({tier_1} USDT). Protokol Kiamat Aktif. Sistem terkunci. Dilarang membeli.",
+        }
+
     available_usdt_after_reserve = max(0, portfolio["usdt_free"] - reserve)
 
     if mental["state"] == "panic" and strategy["no_trade_when_panic"]:
@@ -2788,6 +2808,28 @@ def decide_signal(config, market, portfolio):
                 f"Jangan tambah manual agar tidak dobel entry."
             ),
         }
+
+    # --- Ladder Spacing Protocol ---
+    min_spacing = config.get("buy_strategy", {}).get("min_ladder_spacing_pct", 0.0)
+    if min_spacing > 0:
+        reference_prices = []
+        manual_orders = config.get("manual_open_orders", {}).get("orders", [])
+        for order in manual_orders:
+            if order.get("side") == "buy" and order.get("status") == "open":
+                reference_prices.append(float(order.get("price", 0)))
+                
+        if reference_prices:
+            # Only block if current price is within min_spacing ABOVE an open order
+            # (allow deep dip buys freely)
+            highest_open_buy = max(reference_prices)
+            if market["price"] > highest_open_buy:
+                distance_pct = (market["price"] - highest_open_buy) / highest_open_buy * 100
+                if distance_pct < min_spacing:
+                    return {
+                        "signal": "HOLD_LADDER_SPACING_TOO_TIGHT",
+                        "action_usdt": 0,
+                        "reason": f"Jarak harga saat ini ({market['price']:.0f}) dengan open buy tertinggi ({highest_open_buy:.0f}) hanya {distance_pct:.1f}%. Aturan min_spacing adalah {min_spacing}%. Tunggu harga turun lebih dalam.",
+                    }
 
     if (
         strategy["allow_dip_buy"]
@@ -3371,7 +3413,7 @@ def build_rule_summary_for_llm(
             "source": portfolio.get("source"),
             "target_btc_min_pct": config["portfolio"]["target_btc_min_pct"],
             "target_btc_max_pct": config["portfolio"]["target_btc_max_pct"],
-            "emergency_usdt_reserve": config["portfolio"]["emergency_usdt_reserve"],
+            "reserve_architecture": config["portfolio"].get("reserve_architecture", {}),
         },
         "btc_cost_basis_computed": cost_basis,
         "exposure_tier_computed": exposure_tier,

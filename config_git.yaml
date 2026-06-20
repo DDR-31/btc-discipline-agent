@@ -4,9 +4,12 @@ portfolio:
   usdt: 152.35951423
   btc: 0.00251163
   target_btc_min_pct: 50
-  target_btc_max_pct: 70
+  target_btc_max_pct: 75
   max_single_buy_usdt: 60
-  emergency_usdt_reserve: 100
+  reserve_architecture:
+    tier_1_hard_floor_usdt: 100
+    tier_2_op_buffer_usdt: 15
+    tier_3_tactical_usdt: 37
 
 mental:
   state: calm
@@ -51,29 +54,22 @@ manual_open_orders:
       type: limit
       price: 66000
       amount: 0.00023
-      allocated_usdt: 19.8
+      allocated_usdt: 15.18
       status: filled
 
     - side: buy
       type: limit
       price: 65000
       amount: 0.00043
-      allocated_usdt: 24.7
+      allocated_usdt: 27.95
       status: filled
 
     - side: buy
       type: limit
       price: 62561
-      amount: 0.00059
-      allocated_usdt: 34.40855
+      amount: 0.00050
+      allocated_usdt: 31.28
       status: filled
-
-    - side: buy
-      type: limit
-      price: 57500
-      amount: 0.00073
-      allocated_usdt: 41.975
-      status: open
 
 manual_executions:
   enabled: true
@@ -147,7 +143,7 @@ gemini_decision:
   min_confidence_to_buy: 80
   min_confidence_to_sell: 80
 
-  min_usdt_free_after_buy: 100
+  min_usdt_free_after_buy: 115
   require_btc_below_target_min: true
 
   block_buy_if_possible_fill_detected: true
@@ -184,12 +180,15 @@ gemini_decision:
       max_buy_usdt_with_open_orders: 0
       max_buy_usdt_without_open_orders: 0
 
+buy_strategy:
+  min_ladder_spacing_pct: 3.0
+
 btc_cost_basis:
   enabled: true
   method: "manual_lots"
 
-  # The bot will only activate take-profit sell if the manual lots cover
-  # at least 90% of the BTC in the portfolio configuration.
+  # Bot hanya akan mengaktifkan take-profit sell kalau manual lots
+  # mencakup minimal 90% dari BTC yang ada di portfolio config.
   min_coverage_pct: 90
 
   manual_lots:
@@ -198,45 +197,39 @@ btc_cost_basis:
       price_usdt: 62414.99
       fee_btc: 0
       note: "Remaining from Buy 5 Jun (FIFO Adjusted)"
-      
+
     - side: buy
       amount_btc: 0.00040
       price_usdt: 61059.67
       fee_btc: 0.00000068
       note: "Market Buy 6 Juni"
-      
+
     - side: buy
       amount_btc: 0.00040
       price_usdt: 61000
       fee_btc: 0.00000068
       note: "Limit Buy 9 Juni"
-      
-    - side: buy
-      amount_btc: 0.00040
-      price_usdt: 61000
-      fee_btc: 0
-      note: "Limit Buy 7 Juni"
 
     - side: buy
       amount_btc: 0.00023
       price_usdt: 63838.01
-      fee_btc: 0.00000005
-      note: "Gemini early-confirmation manual buy around 63700"
+      fee_btc: 0.00000039
+      note: "Market Buy 13 Juni"
 
     - side: buy
-      amount_btc: 0.0003
+      amount_btc: 0.00030
       price_usdt: 66000
-      fee_btc: 0.00000006
-      note: "Filled buy limit at 66000"
+      fee_btc: 0.00000051
+      note: "Limit Buy 16 Juni"
 
     - side: buy
-      amount_btc: 0.00038
+      amount_btc: 0.00043
       price_usdt: 65000
-      fee_btc: 0.00000056
+      fee_btc: 0.00000065
       note: "Limit Buy 17 Juni (Filled)"
 
     - side: buy
-      amount_btc: 0.00055
+      amount_btc: 0.00050
       price_usdt: 62561
       fee_btc: 0.00000302
       note: "Limit Buy 62.5k (Filled)"
