@@ -1,7 +1,7 @@
 {
   "quota_date_pacific": "2026-06-28",
-  "grounded_runs_today": 1,
-  "last_grounding_bucket_utc": "2026-06-28T08:00Z",
+  "grounded_runs_today": 4,
+  "last_grounding_bucket_utc": "2026-06-28T16:00Z",
   "models": {
     "gemini-3.5-flash": {
       "requests_today": 7,
@@ -15,26 +15,26 @@
       "cooldown_until_utc": ""
     },
     "gemini-2.5-flash": {
-      "requests_today": 6,
+      "requests_today": 8,
       "success_today": 2,
-      "errors_today": 4,
-      "last_used_utc": "2026-06-28T12:01:25.509596+00:00",
-      "last_status": "http_error",
-      "last_mode": "fallback",
+      "errors_today": 6,
+      "last_used_utc": "2026-06-28T16:02:14.007269+00:00",
+      "last_status": "exception",
+      "last_mode": "grounding",
       "last_response_status": 503,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-06-28T12:16:25.509605+00:00"
+      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=45)",
+      "cooldown_until_utc": "2026-06-28T16:16:25.249964+00:00"
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 3,
-      "success_today": 1,
+      "requests_today": 4,
+      "success_today": 2,
       "errors_today": 2,
-      "last_used_utc": "2026-06-28T12:01:28.688339+00:00",
-      "last_status": "http_error",
-      "last_mode": "fallback",
-      "last_response_status": 503,
+      "last_used_utc": "2026-06-28T16:01:28.961380+00:00",
+      "last_status": "ok",
+      "last_mode": "grounding_researcher",
+      "last_response_status": 200,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-06-28T12:16:28.688349+00:00"
+      "cooldown_until_utc": ""
     }
   }
 }
