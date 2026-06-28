@@ -4,14 +4,14 @@
   "last_grounding_bucket_utc": "2026-06-28T20:00Z",
   "models": {
     "gemini-3.5-flash": {
-      "requests_today": 11,
+      "requests_today": 12,
       "success_today": 4,
-      "errors_today": 7,
-      "last_used_utc": "2026-06-28T21:00:57.783022+00:00",
-      "last_status": "http_error",
+      "errors_today": 8,
+      "last_used_utc": "2026-06-28T22:01:41.311811+00:00",
+      "last_status": "exception",
       "last_mode": "deep_primary",
       "last_response_status": 503,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=45)",
       "cooldown_until_utc": "2026-06-28T21:15:57.783035+00:00"
     },
     "gemini-2.5-flash": {
