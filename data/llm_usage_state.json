@@ -1,35 +1,35 @@
 {
-  "quota_date_pacific": "2026-07-08",
-  "grounded_runs_today": 5,
-  "last_grounding_bucket_utc": "2026-07-09T00:00Z",
+  "quota_date_pacific": "2026-07-09",
+  "grounded_runs_today": 0,
+  "last_grounding_bucket_utc": "",
   "models": {
     "gemini-3.5-flash": {
-      "requests_today": 18,
-      "success_today": 10,
-      "errors_today": 8,
-      "last_used_utc": "2026-07-09T06:01:35.264947+00:00",
-      "last_status": "ok",
+      "requests_today": 1,
+      "success_today": 0,
+      "errors_today": 1,
+      "last_used_utc": "2026-07-09T07:01:26.404724+00:00",
+      "last_status": "http_error",
       "last_mode": "deep_primary",
-      "last_response_status": 200,
+      "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": ""
+      "cooldown_until_utc": "2026-07-09T07:16:26.404735+00:00"
     },
     "gemini-2.5-flash": {
-      "requests_today": 16,
-      "success_today": 15,
+      "requests_today": 1,
+      "success_today": 0,
       "errors_today": 1,
-      "last_used_utc": "2026-07-09T00:01:45.020135+00:00",
-      "last_status": "ok",
-      "last_mode": "grounding",
-      "last_response_status": 200,
+      "last_used_utc": "2026-07-09T07:01:32.901468+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": ""
+      "cooldown_until_utc": "2026-07-09T07:16:32.901479+00:00"
     },
     "gemini-2.5-flash-lite": {
       "requests_today": 1,
       "success_today": 1,
       "errors_today": 0,
-      "last_used_utc": "2026-07-08T22:01:26.631668+00:00",
+      "last_used_utc": "2026-07-09T07:01:38.905309+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
