@@ -4,32 +4,32 @@
   "last_grounding_bucket_utc": "2026-07-09T20:00Z",
   "models": {
     "gemini-3.5-flash": {
-      "requests_today": 18,
+      "requests_today": 19,
       "success_today": 6,
-      "errors_today": 12,
-      "last_used_utc": "2026-07-10T05:01:50.999974+00:00",
-      "last_status": "ok",
+      "errors_today": 13,
+      "last_used_utc": "2026-07-10T06:01:56.466558+00:00",
+      "last_status": "http_error",
       "last_mode": "deep_primary",
-      "last_response_status": 200,
+      "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": ""
+      "cooldown_until_utc": "2026-07-10T06:16:56.466570+00:00"
     },
     "gemini-2.5-flash": {
-      "requests_today": 21,
+      "requests_today": 22,
       "success_today": 14,
-      "errors_today": 7,
-      "last_used_utc": "2026-07-10T00:01:26.317033+00:00",
-      "last_status": "ok",
+      "errors_today": 8,
+      "last_used_utc": "2026-07-10T06:01:57.432784+00:00",
+      "last_status": "http_error",
       "last_mode": "fallback",
-      "last_response_status": 200,
+      "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": ""
+      "cooldown_until_utc": "2026-07-10T06:16:57.432796+00:00"
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 5,
-      "success_today": 2,
+      "requests_today": 6,
+      "success_today": 3,
       "errors_today": 3,
-      "last_used_utc": "2026-07-09T23:01:25.060882+00:00",
+      "last_used_utc": "2026-07-10T06:02:00.130750+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
