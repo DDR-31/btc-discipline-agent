@@ -1,7 +1,7 @@
 {
   "quota_date_pacific": "2026-08-02",
-  "grounded_runs_today": 4,
-  "last_grounding_bucket_utc": "2026-08-02T20:00Z",
+  "grounded_runs_today": 5,
+  "last_grounding_bucket_utc": "2026-08-03T04:00Z",
   "models": {
     "gemini-3.5-flash": {
       "requests_today": 16,
@@ -15,10 +15,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-2.5-flash": {
-      "requests_today": 9,
-      "success_today": 9,
+      "requests_today": 11,
+      "success_today": 11,
       "errors_today": 0,
-      "last_used_utc": "2026-08-03T00:01:39.244317+00:00",
+      "last_used_utc": "2026-08-03T04:01:20.443242+00:00",
       "last_status": "ok",
       "last_mode": "grounding",
       "last_response_status": 200,
