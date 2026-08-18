@@ -1,39 +1,17 @@
 {
-  "quota_date_pacific": "2026-08-17",
-  "grounded_runs_today": 5,
-  "last_grounding_bucket_utc": "2026-08-18T04:00Z",
+  "quota_date_pacific": "2026-08-18",
+  "grounded_runs_today": 0,
+  "last_grounding_bucket_utc": "",
   "models": {
     "gemini-3.5-flash": {
-      "requests_today": 16,
-      "success_today": 11,
-      "errors_today": 5,
-      "last_used_utc": "2026-08-18T06:00:49.391624+00:00",
-      "last_status": "http_error",
-      "last_mode": "deep_primary",
-      "last_response_status": 503,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-08-18T06:15:49.391638+00:00"
-    },
-    "gemini-2.5-flash": {
-      "requests_today": 16,
-      "success_today": 12,
-      "errors_today": 4,
-      "last_used_utc": "2026-08-18T06:00:55.453388+00:00",
-      "last_status": "http_error",
-      "last_mode": "fallback",
-      "last_response_status": 503,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-08-18T06:15:55.453418+00:00"
-    },
-    "gemini-2.5-flash-lite": {
-      "requests_today": 3,
-      "success_today": 2,
-      "errors_today": 1,
-      "last_used_utc": "2026-08-18T06:00:58.828332+00:00",
+      "requests_today": 1,
+      "success_today": 1,
+      "errors_today": 0,
+      "last_used_utc": "2026-08-18T07:00:56.953655+00:00",
       "last_status": "ok",
-      "last_mode": "fallback",
+      "last_mode": "deep_primary",
       "last_response_status": 200,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "last_error": "",
       "cooldown_until_utc": ""
     }
   }
