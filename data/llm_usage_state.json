@@ -1,28 +1,17 @@
 {
-  "quota_date_pacific": "2026-08-23",
-  "grounded_runs_today": 6,
-  "last_grounding_bucket_utc": "2026-08-24T04:00Z",
+  "quota_date_pacific": "2026-08-24",
+  "grounded_runs_today": 0,
+  "last_grounding_bucket_utc": "",
   "models": {
     "gemini-3.5-flash": {
-      "requests_today": 18,
-      "success_today": 18,
+      "requests_today": 1,
+      "success_today": 1,
       "errors_today": 0,
-      "last_used_utc": "2026-08-24T06:00:50.318113+00:00",
+      "last_used_utc": "2026-08-24T07:01:02.417235+00:00",
       "last_status": "ok",
       "last_mode": "deep_primary",
       "last_response_status": 200,
       "last_error": "",
-      "cooldown_until_utc": ""
-    },
-    "gemini-2.5-flash": {
-      "requests_today": 11,
-      "success_today": 10,
-      "errors_today": 1,
-      "last_used_utc": "2026-08-24T04:01:14.694298+00:00",
-      "last_status": "ok",
-      "last_mode": "grounding",
-      "last_response_status": 200,
-      "last_error": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))",
       "cooldown_until_utc": ""
     }
   }
