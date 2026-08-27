@@ -3263,7 +3263,7 @@ def choose_gemini_model(config, market, portfolio, decision):
 
     Priority:
     1. Grounding every configured interval, if enabled and quota available.
-    2. Deep primary model, usually Gemini 3.5 Flash.
+    2. Deep primary model, usually Gemini 3.7 Flash.
     3. Deep secondary model, usually Gemini 2.5 Flash.
     4. Fallback model as quota fallback before request.
 
@@ -3587,8 +3587,8 @@ def fetch_macro_grounding_context(config, api_key):
     grounding_cfg = get_llm_model_config(llm_cfg, "grounding")
     model = grounding_cfg.get("model", "gemini-2.5-flash")
 
-    # Enforce user rule: grounding must use 2.5 flash or lite, do NOT use 3.5 flash
-    if "3.5" in model:
+    # Enforce user rule: grounding must use 2.5 flash or lite, do NOT use 3.7 flash
+    if "3.7" in model:
         model = "gemini-2.5-flash"
 
     prompt = (
