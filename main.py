@@ -3263,7 +3263,7 @@ def choose_gemini_model(config, market, portfolio, decision):
 
     Priority:
     1. Grounding every configured interval, if enabled and quota available.
-    2. Deep primary model, usually Gemini 3.7 Flash.
+    2. Deep primary model, usually Gemini 3.5 Flash.
     3. Deep secondary model, usually Gemini 2.5 Flash.
     4. Fallback model as quota fallback before request.
 
@@ -3587,8 +3587,8 @@ def fetch_macro_grounding_context(config, api_key):
     grounding_cfg = get_llm_model_config(llm_cfg, "grounding")
     model = grounding_cfg.get("model", "gemini-2.5-flash")
 
-    # Enforce user rule: grounding must use 2.5 flash or lite, do NOT use 3.7 flash
-    if "3.7" in model:
+    # Enforce user rule: grounding must use 2.5 flash or lite, do NOT use 3.x flash
+    if "3.5" in model or "3.7" in model or "3." in model:
         model = "gemini-2.5-flash"
 
     prompt = (
@@ -3901,52 +3901,51 @@ Data:
     # Grounding context was already injected into the prompt via the Researcher Bot.
 
     try:
-        response = requests.post(url, json=payload, timeout=45)
+        response = None
+        models_to_try = [(analyst_model, url, analyst_max_tokens)]
+        for fb_cfg in llm_cfg.get("fallback_models", []):
+            fb_model = fb_cfg["model"]
+            fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fb_model}:generateContent?key={api_key}"
+            fb_tokens = fb_cfg.get("max_output_tokens", 1500)
+            models_to_try.append((fb_model, fb_url, fb_tokens))
 
-        # The main call (Analyst) does not use grounding tools directly anymore,
-        # so use_grounding=False is passed here to reflect the actual API payload,
-        # while the grounding quota was already recorded by the Researcher Bot.
-        record_llm_model_usage(
-            config=config,
-            model=analyst_model,
-            mode=routing.get("mode", "unknown"),
-            use_grounding=False,
-            status="ok" if response.ok else "http_error",
-            response_status=response.status_code,
-            error_message=response.text if not response.ok else "",
-        )
-
-        if not response.ok:
-            print(f"[WARN] Gemini error with {analyst_model}: {response.status_code} {response.text}")
-            
-            fallback_configs = llm_cfg.get("fallback_models", [])
-            for fb_cfg in fallback_configs:
-                fb_model = fb_cfg["model"]
-                fb_url = f"https://generativelanguage.googleapis.com/v1beta/models/{fb_model}:generateContent?key={api_key}"
-                
-                payload["generationConfig"]["maxOutputTokens"] = fb_cfg.get("max_output_tokens", 1500)
-                
-                print(f"[WARN] Retrying Analyst generation with fallback model: {fb_model}...", flush=True)
-                response = requests.post(fb_url, json=payload, timeout=45)
-                
+        last_error_text = ""
+        for current_model, current_url, current_tokens in models_to_try:
+            payload["generationConfig"]["maxOutputTokens"] = current_tokens
+            try:
+                print(f"[INFO] Requesting Gemini analysis with {current_model}...", flush=True)
+                res = requests.post(current_url, json=payload, timeout=90)
                 record_llm_model_usage(
                     config=config,
-                    model=fb_model,
-                    mode="fallback",
+                    model=current_model,
+                    mode=routing.get("mode", "unknown") if current_model == analyst_model else "fallback",
                     use_grounding=False,
-                    status="ok" if response.ok else "http_error",
-                    response_status=response.status_code,
-                    error_message=response.text if not response.ok else "",
+                    status="ok" if res.ok else "http_error",
+                    response_status=res.status_code,
+                    error_message=res.text if not res.ok else "",
                 )
-                
-                if response.ok:
-                    print(f"[SUCCESS] Fallback to {fb_model} succeeded!", flush=True)
+                if res.ok:
+                    response = res
                     break
+                else:
+                    last_error_text = f"HTTP {res.status_code}: {res.text[:200]}"
+                    print(f"[WARN] {current_model} failed ({last_error_text}). Trying next fallback...", flush=True)
+            except Exception as req_err:
+                last_error_text = str(req_err)
+                print(f"[WARN] {current_model} request exception ({req_err}). Trying next fallback...", flush=True)
+                record_llm_model_usage(
+                    config=config,
+                    model=current_model,
+                    mode=routing.get("mode", "unknown") if current_model == analyst_model else "fallback",
+                    use_grounding=False,
+                    status="exception",
+                    response_status=None,
+                    error_message=str(req_err),
+                )
 
-        if not response.ok:
-            print(f"[ERROR] All models failed. Last error: {response.status_code}")
-            set_last_routing(routing, "unavailable", f"http_error_{response.status_code}")
-            return unavailable(f"main request HTTP error {response.status_code}")
+        if not response or not response.ok:
+            set_last_routing(routing, "unavailable", "all_models_failed")
+            return unavailable(f"All Gemini models failed. Last error: {last_error_text}")
 
         data = response.json()
 
@@ -4542,6 +4541,12 @@ def build_message(config, market, portfolio, decision,
         f"Quota: {esc(requests_today)}/{esc(daily_limit)} requests today\n\n"
     )
 
+    reserves = config["portfolio"].get("reserve_architecture", {})
+    t1 = reserves.get("tier_1_hard_floor_usdt", 100)
+    t2 = reserves.get("tier_2_op_buffer_usdt", 0)
+    reserve_total = t1 + t2
+    tactical_ammo = max(0, portfolio["usdt_free"] - reserve_total)
+
     return (
         f"<b>BTC Discipline Agent</b>\n\n"
 
@@ -4561,7 +4566,7 @@ def build_message(config, market, portfolio, decision,
         f"{portfolio_note}"
         f"BTC: {portfolio['btc_pct']:.1f}% | USDT: {portfolio['usdt_pct']:.1f}%\n"
         f"BTC total: {portfolio['btc']:.8f}\n"
-        f"USDT free: {portfolio['usdt_free']:.2f}\n"
+        f"USDT free: {portfolio['usdt_free']:.2f} (Tactical Ammo: {tactical_ammo:.2f} USDT)\n"
         f"USDT used/open orders: {portfolio['usdt_used']:.2f}\n"
         f"USDT total: {portfolio['usdt']:.2f}\n"
         f"Total value: <b>{portfolio['total_value']:.2f} USDT</b>\n\n"
