@@ -1,7 +1,7 @@
 {
   "quota_date_pacific": "2026-08-30",
-  "grounded_runs_today": 4,
-  "last_grounding_bucket_utc": "2026-08-30T16:00Z",
+  "grounded_runs_today": 6,
+  "last_grounding_bucket_utc": "2026-08-31T00:00Z",
   "models": {
     "gemini-3.7-flash": {
       "requests_today": 13,
@@ -26,10 +26,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-2.5-flash": {
-      "requests_today": 7,
-      "success_today": 5,
-      "errors_today": 2,
-      "last_used_utc": "2026-08-30T20:01:41.613436+00:00",
+      "requests_today": 9,
+      "success_today": 6,
+      "errors_today": 3,
+      "last_used_utc": "2026-08-31T00:01:11.669448+00:00",
       "last_status": "ok",
       "last_mode": "grounding",
       "last_response_status": 200,
@@ -37,10 +37,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 2,
-      "success_today": 2,
+      "requests_today": 3,
+      "success_today": 3,
       "errors_today": 0,
-      "last_used_utc": "2026-08-30T16:00:52.492115+00:00",
+      "last_used_utc": "2026-08-31T00:00:58.876414+00:00",
       "last_status": "ok",
       "last_mode": "grounding_researcher",
       "last_response_status": 200,
