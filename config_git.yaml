@@ -1,15 +1,15 @@
 symbol: BTC/USDT
 
 portfolio:
-  usdt: 152.35951423
-  btc: 0.00251163
+  usdt: 171.49130262
+  btc: 0.00226512
   target_btc_min_pct: 50
   target_btc_max_pct: 75
   max_single_buy_usdt: 60
   reserve_architecture:
     tier_1_hard_floor_usdt: 100
     tier_2_op_buffer_usdt: 15
-    tier_3_tactical_usdt: 37
+    tier_3_tactical_usdt: 56.49
 
 mental:
   state: calm
@@ -76,7 +76,7 @@ manual_open_orders:
       price: 57500
       amount: 0.00073
       allocated_usdt: 41.98
-      status: open
+      status: cancelled
 
 manual_executions:
   enabled: true
@@ -129,6 +129,44 @@ manual_executions:
       executed_at_utc: "2026-06-13T00:00:00Z"
       related_open_order_price: null
       note: "Executed Gemini early-confirmation buy signal manually"
+
+    - id: "2026-09-02-sell-76790-001"
+      status: filled
+      side: sell
+      order_type: market
+
+      source_signal_key: "MANUAL_PARTIAL_PROFIT_TAKE"
+      source_tier: "tactical_rebalance"
+
+      limit_price_usdt: null
+      avg_fill_price_usdt: 76790.75
+      quote_received_usdt: 22.99244065
+      base_spent_btc: 0.00030000
+      fee_usdt: 0.04478435
+
+      placed_at_utc: "2026-09-02T12:10:00Z"
+      executed_at_utc: "2026-09-02T12:10:00Z"
+      related_open_order_price: null
+      note: "Manual tactical sell at 76,790.75 USDT (net 22.992 USDT received)"
+
+    - id: "2026-09-03-sell-81250-001"
+      status: filled
+      side: sell
+      order_type: market
+
+      source_signal_key: "MANUAL_PARTIAL_PROFIT_TAKE"
+      source_tier: "tactical_take_profit"
+
+      limit_price_usdt: null
+      avg_fill_price_usdt: 81249.41
+      quote_received_usdt: 24.27600000
+      base_spent_btc: 0.00030000
+      fee_usdt: 0.09857179
+
+      placed_at_utc: "2026-09-03T16:02:00Z"
+      executed_at_utc: "2026-09-03T16:02:00Z"
+      related_open_order_price: null
+      note: "Manual partial take profit at 81,249.41 USDT (resistance peak)"
 
 intrahour_price_check:
   enabled: true
