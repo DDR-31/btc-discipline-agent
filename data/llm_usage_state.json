@@ -1,7 +1,7 @@
 {
   "quota_date_pacific": "2026-09-17",
-  "grounded_runs_today": 2,
-  "last_grounding_bucket_utc": "2026-09-17T16:00Z",
+  "grounded_runs_today": 4,
+  "last_grounding_bucket_utc": "2026-09-17T20:00Z",
   "models": {
     "gemini-3.7-flash": {
       "requests_today": 10,
@@ -15,32 +15,32 @@
       "cooldown_until_utc": "2026-09-17T19:15:55.342283+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 13,
+      "requests_today": 14,
       "success_today": 4,
-      "errors_today": 9,
-      "last_used_utc": "2026-09-17T19:00:57.326915+00:00",
+      "errors_today": 10,
+      "last_used_utc": "2026-09-17T20:01:04.699946+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-17T19:15:57.326926+00:00"
+      "cooldown_until_utc": "2026-09-17T20:16:04.699960+00:00"
     },
     "gemini-2.5-flash": {
-      "requests_today": 14,
+      "requests_today": 17,
       "success_today": 5,
-      "errors_today": 9,
-      "last_used_utc": "2026-09-17T19:01:09.287018+00:00",
+      "errors_today": 12,
+      "last_used_utc": "2026-09-17T20:01:14.512157+00:00",
       "last_status": "http_error",
-      "last_mode": "fallback",
+      "last_mode": "grounding",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-17T19:16:09.287029+00:00"
+      "cooldown_until_utc": "2026-09-17T20:16:14.512169+00:00"
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 6,
-      "success_today": 4,
+      "requests_today": 8,
+      "success_today": 6,
       "errors_today": 2,
-      "last_used_utc": "2026-09-17T19:01:11.341511+00:00",
+      "last_used_utc": "2026-09-17T20:01:16.499435+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
