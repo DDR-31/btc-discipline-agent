@@ -4,59 +4,59 @@
   "last_grounding_bucket_utc": "2026-09-24T16:00Z",
   "models": {
     "gemini-3.8-flash": {
-      "requests_today": 7,
+      "requests_today": 8,
       "success_today": 0,
-      "errors_today": 7,
-      "last_used_utc": "2026-09-24T15:00:59.512666+00:00",
+      "errors_today": 8,
+      "last_used_utc": "2026-09-24T17:01:06.884479+00:00",
       "last_status": "http_error",
       "last_mode": "deep_primary",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-24T15:15:59.512678+00:00"
+      "cooldown_until_utc": "2026-09-24T17:16:06.884488+00:00"
     },
     "gemini-3.7-flash": {
-      "requests_today": 10,
+      "requests_today": 11,
       "success_today": 0,
-      "errors_today": 10,
-      "last_used_utc": "2026-09-24T16:01:17.012896+00:00",
+      "errors_today": 11,
+      "last_used_utc": "2026-09-24T17:01:07.567994+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-24T16:16:17.012906+00:00"
+      "cooldown_until_utc": "2026-09-24T17:16:07.568005+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 10,
+      "requests_today": 11,
       "success_today": 4,
-      "errors_today": 6,
-      "last_used_utc": "2026-09-24T16:01:41.843787+00:00",
+      "errors_today": 7,
+      "last_used_utc": "2026-09-24T17:01:07.930742+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-09-24T17:16:07.930751+00:00"
+    },
+    "gemini-2.5-flash": {
+      "requests_today": 13,
+      "success_today": 3,
+      "errors_today": 10,
+      "last_used_utc": "2026-09-24T17:01:41.337356+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-09-24T17:16:41.337367+00:00"
+    },
+    "gemini-2.5-flash-lite": {
+      "requests_today": 7,
+      "success_today": 6,
+      "errors_today": 1,
+      "last_used_utc": "2026-09-24T17:01:42.952408+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
       "cooldown_until_utc": ""
-    },
-    "gemini-2.5-flash": {
-      "requests_today": 12,
-      "success_today": 3,
-      "errors_today": 9,
-      "last_used_utc": "2026-09-24T16:01:05.665574+00:00",
-      "last_status": "http_error",
-      "last_mode": "grounding",
-      "last_response_status": 503,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-24T16:16:05.665583+00:00"
-    },
-    "gemini-2.5-flash-lite": {
-      "requests_today": 6,
-      "success_today": 5,
-      "errors_today": 1,
-      "last_used_utc": "2026-09-24T15:01:07.281810+00:00",
-      "last_status": "http_error",
-      "last_mode": "fallback",
-      "last_response_status": 503,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-24T15:16:07.281822+00:00"
     }
   }
 }
