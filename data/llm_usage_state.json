@@ -15,21 +15,43 @@
       "cooldown_until_utc": "2026-09-25T07:16:02.928493+00:00"
     },
     "gemini-3.7-flash": {
-      "requests_today": 1,
+      "requests_today": 2,
       "success_today": 0,
-      "errors_today": 1,
-      "last_used_utc": "2026-09-25T07:01:08.917447+00:00",
+      "errors_today": 2,
+      "last_used_utc": "2026-09-25T08:01:51.381060+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-09-25T07:16:08.917463+00:00"
+      "cooldown_until_utc": "2026-09-25T08:16:51.381071+00:00"
     },
     "gemini-3.5-flash": {
+      "requests_today": 2,
+      "success_today": 1,
+      "errors_today": 1,
+      "last_used_utc": "2026-09-25T08:01:52.709713+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-09-25T08:16:52.709723+00:00"
+    },
+    "gemini-2.5-flash": {
+      "requests_today": 2,
+      "success_today": 0,
+      "errors_today": 2,
+      "last_used_utc": "2026-09-25T08:02:00.226407+00:00",
+      "last_status": "http_error",
+      "last_mode": "grounding",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-09-25T08:17:00.226421+00:00"
+    },
+    "gemini-2.5-flash-lite": {
       "requests_today": 1,
       "success_today": 1,
       "errors_today": 0,
-      "last_used_utc": "2026-09-25T07:01:19.051728+00:00",
+      "last_used_utc": "2026-09-25T08:02:05.146664+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
