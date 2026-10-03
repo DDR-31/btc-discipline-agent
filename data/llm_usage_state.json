@@ -4,15 +4,15 @@
   "last_grounding_bucket_utc": "2026-10-03T00:00Z",
   "models": {
     "gemini-3.8-flash": {
-      "requests_today": 13,
+      "requests_today": 14,
       "success_today": 2,
-      "errors_today": 11,
-      "last_used_utc": "2026-10-02T23:00:57.910572+00:00",
+      "errors_today": 12,
+      "last_used_utc": "2026-10-03T01:00:52.077350+00:00",
       "last_status": "http_error",
       "last_mode": "deep_primary",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-10-02T23:15:57.910583+00:00"
+      "cooldown_until_utc": "2026-10-03T01:15:52.077361+00:00"
     },
     "gemini-2.5-flash": {
       "requests_today": 14,
@@ -26,21 +26,21 @@
       "cooldown_until_utc": "2026-10-03T00:16:25.268057+00:00"
     },
     "gemini-3.7-flash": {
-      "requests_today": 15,
+      "requests_today": 16,
       "success_today": 1,
-      "errors_today": 14,
-      "last_used_utc": "2026-10-03T00:01:28.879439+00:00",
+      "errors_today": 15,
+      "last_used_utc": "2026-10-03T01:00:56.846390+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-10-03T00:16:28.879451+00:00"
+      "cooldown_until_utc": "2026-10-03T01:15:56.846401+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 14,
-      "success_today": 8,
+      "requests_today": 15,
+      "success_today": 9,
       "errors_today": 6,
-      "last_used_utc": "2026-10-03T00:01:35.449736+00:00",
+      "last_used_utc": "2026-10-03T01:01:03.917886+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
