@@ -4,26 +4,26 @@
   "last_grounding_bucket_utc": "2026-10-03T08:00Z",
   "models": {
     "gemini-3.8-flash": {
-      "requests_today": 1,
+      "requests_today": 2,
       "success_today": 0,
-      "errors_today": 1,
-      "last_used_utc": "2026-10-03T07:00:57.926654+00:00",
+      "errors_today": 2,
+      "last_used_utc": "2026-10-03T09:00:55.334062+00:00",
       "last_status": "http_error",
       "last_mode": "deep_primary",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-10-03T07:15:57.926666+00:00"
+      "cooldown_until_utc": "2026-10-03T09:15:55.334072+00:00"
     },
     "gemini-3.7-flash": {
-      "requests_today": 1,
+      "requests_today": 2,
       "success_today": 1,
-      "errors_today": 0,
-      "last_used_utc": "2026-10-03T07:01:01.227740+00:00",
-      "last_status": "ok",
+      "errors_today": 1,
+      "last_used_utc": "2026-10-03T09:01:02.580509+00:00",
+      "last_status": "http_error",
       "last_mode": "fallback",
-      "last_response_status": 200,
-      "last_error": "",
-      "cooldown_until_utc": ""
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-10-03T09:16:02.580519+00:00"
     },
     "gemini-2.5-flash": {
       "requests_today": 2,
@@ -32,6 +32,17 @@
       "last_used_utc": "2026-10-03T08:01:23.217021+00:00",
       "last_status": "ok",
       "last_mode": "grounding",
+      "last_response_status": 200,
+      "last_error": "",
+      "cooldown_until_utc": ""
+    },
+    "gemini-3.5-flash": {
+      "requests_today": 1,
+      "success_today": 1,
+      "errors_today": 0,
+      "last_used_utc": "2026-10-03T09:01:59.808234+00:00",
+      "last_status": "ok",
+      "last_mode": "fallback",
       "last_response_status": 200,
       "last_error": "",
       "cooldown_until_utc": ""
