@@ -4,15 +4,15 @@
   "last_grounding_bucket_utc": "",
   "models": {
     "gemini-3.8-flash": {
-      "requests_today": 2,
+      "requests_today": 3,
       "success_today": 2,
-      "errors_today": 0,
-      "last_used_utc": "2026-10-09T09:01:05.128786+00:00",
-      "last_status": "ok",
+      "errors_today": 1,
+      "last_used_utc": "2026-10-09T10:00:58.374843+00:00",
+      "last_status": "http_error",
       "last_mode": "deep_primary",
-      "last_response_status": 200,
-      "last_error": "",
-      "cooldown_until_utc": ""
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-10-09T10:15:58.374854+00:00"
     },
     "gemini-2.5-flash": {
       "requests_today": 1,
@@ -21,6 +21,28 @@
       "last_used_utc": "2026-10-09T08:01:44.176272+00:00",
       "last_status": "ok",
       "last_mode": "grounding",
+      "last_response_status": 200,
+      "last_error": "",
+      "cooldown_until_utc": ""
+    },
+    "gemini-3.7-flash": {
+      "requests_today": 1,
+      "success_today": 0,
+      "errors_today": 1,
+      "last_used_utc": "2026-10-09T10:01:04.222967+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-10-09T10:16:04.222978+00:00"
+    },
+    "gemini-3.5-flash": {
+      "requests_today": 1,
+      "success_today": 1,
+      "errors_today": 0,
+      "last_used_utc": "2026-10-09T10:01:10.577464+00:00",
+      "last_status": "ok",
+      "last_mode": "fallback",
       "last_response_status": 200,
       "last_error": "",
       "cooldown_until_utc": ""
