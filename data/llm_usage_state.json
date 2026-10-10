@@ -4,48 +4,59 @@
   "last_grounding_bucket_utc": "2026-10-10T08:00Z",
   "models": {
     "gemini-3.8-flash": {
-      "requests_today": 1,
-      "success_today": 1,
-      "errors_today": 0,
-      "last_used_utc": "2026-10-10T07:01:06.733361+00:00",
-      "last_status": "ok",
-      "last_mode": "deep_primary",
-      "last_response_status": 200,
-      "last_error": "",
-      "cooldown_until_utc": ""
-    },
-    "gemini-2.5-flash": {
       "requests_today": 2,
-      "success_today": 0,
-      "errors_today": 2,
-      "last_used_utc": "2026-10-10T08:01:04.265465+00:00",
+      "success_today": 1,
+      "errors_today": 1,
+      "last_used_utc": "2026-10-10T09:01:00.227969+00:00",
       "last_status": "http_error",
-      "last_mode": "grounding",
+      "last_mode": "deep_primary",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-10-10T08:16:04.265477+00:00"
+      "cooldown_until_utc": "2026-10-10T09:16:00.227980+00:00"
+    },
+    "gemini-2.5-flash": {
+      "requests_today": 3,
+      "success_today": 0,
+      "errors_today": 3,
+      "last_used_utc": "2026-10-10T09:02:35.593443+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-10-10T09:17:35.593454+00:00"
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 1,
-      "success_today": 1,
+      "requests_today": 2,
+      "success_today": 2,
       "errors_today": 0,
-      "last_used_utc": "2026-10-10T08:01:03.645064+00:00",
-      "last_status": "ok",
-      "last_mode": "grounding_researcher",
-      "last_response_status": 200,
-      "last_error": "",
-      "cooldown_until_utc": ""
-    },
-    "gemini-3.7-flash": {
-      "requests_today": 1,
-      "success_today": 1,
-      "errors_today": 0,
-      "last_used_utc": "2026-10-10T08:01:12.282885+00:00",
+      "last_used_utc": "2026-10-10T09:02:37.499252+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
       "last_error": "",
       "cooldown_until_utc": ""
+    },
+    "gemini-3.7-flash": {
+      "requests_today": 2,
+      "success_today": 1,
+      "errors_today": 1,
+      "last_used_utc": "2026-10-10T09:02:30.392427+00:00",
+      "last_status": "exception",
+      "last_mode": "fallback",
+      "last_response_status": 200,
+      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
+      "cooldown_until_utc": ""
+    },
+    "gemini-3.5-flash": {
+      "requests_today": 1,
+      "success_today": 0,
+      "errors_today": 1,
+      "last_used_utc": "2026-10-10T09:02:33.848628+00:00",
+      "last_status": "http_error",
+      "last_mode": "fallback",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-10-10T09:17:33.848638+00:00"
     }
   }
 }
