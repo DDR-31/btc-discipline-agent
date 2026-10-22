@@ -37,15 +37,15 @@
       "cooldown_until_utc": "2026-10-21T21:16:40.828300+00:00"
     },
     "gemini-2.5-flash": {
-      "requests_today": 16,
-      "success_today": 6,
+      "requests_today": 17,
+      "success_today": 7,
       "errors_today": 10,
-      "last_used_utc": "2026-10-21T21:01:41.616082+00:00",
-      "last_status": "http_error",
-      "last_mode": "fallback",
-      "last_response_status": 503,
+      "last_used_utc": "2026-10-22T00:01:38.915631+00:00",
+      "last_status": "ok",
+      "last_mode": "grounding",
+      "last_response_status": 200,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-10-21T21:16:41.616093+00:00"
+      "cooldown_until_utc": ""
     },
     "gemini-2.5-flash-lite": {
       "requests_today": 7,
