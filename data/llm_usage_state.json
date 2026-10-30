@@ -4,13 +4,13 @@
   "last_grounding_bucket_utc": "2026-10-30T08:00Z",
   "models": {
     "gemini-3.8-flash": {
-      "requests_today": 2,
-      "success_today": 0,
+      "requests_today": 3,
+      "success_today": 1,
       "errors_today": 2,
-      "last_used_utc": "2026-10-30T09:02:22.607045+00:00",
-      "last_status": "exception",
+      "last_used_utc": "2026-10-30T10:01:52.855287+00:00",
+      "last_status": "ok",
       "last_mode": "deep_primary",
-      "last_response_status": "",
+      "last_response_status": 200,
       "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
       "cooldown_until_utc": ""
     },
