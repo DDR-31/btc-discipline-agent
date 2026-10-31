@@ -4,26 +4,26 @@
   "last_grounding_bucket_utc": "2026-10-30T12:00Z",
   "models": {
     "gemini-3.8-flash": {
+      "requests_today": 19,
+      "success_today": 4,
+      "errors_today": 15,
+      "last_used_utc": "2026-10-31T05:00:59.160984+00:00",
+      "last_status": "http_error",
+      "last_mode": "deep_primary",
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-10-31T05:15:59.160995+00:00"
+    },
+    "gemini-3.7-flash": {
       "requests_today": 18,
       "success_today": 4,
       "errors_today": 14,
-      "last_used_utc": "2026-10-31T04:02:08.553778+00:00",
-      "last_status": "ok",
-      "last_mode": "deep_primary",
-      "last_response_status": 200,
-      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
-      "cooldown_until_utc": ""
-    },
-    "gemini-3.7-flash": {
-      "requests_today": 17,
-      "success_today": 4,
-      "errors_today": 13,
-      "last_used_utc": "2026-10-31T03:02:18.173395+00:00",
+      "last_used_utc": "2026-10-31T05:00:59.342827+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
       "last_response_status": 429,
       "last_error": "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier",
-      "cooldown_until_utc": "2026-10-31T03:17:18.173405+00:00"
+      "cooldown_until_utc": "2026-10-31T05:15:59.342837+00:00"
     },
     "gemini-2.5-flash": {
       "requests_today": 17,
@@ -48,10 +48,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.5-flash": {
-      "requests_today": 13,
-      "success_today": 4,
+      "requests_today": 14,
+      "success_today": 5,
       "errors_today": 9,
-      "last_used_utc": "2026-10-31T03:02:23.977034+00:00",
+      "last_used_utc": "2026-10-31T05:01:13.726509+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
