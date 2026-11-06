@@ -26,10 +26,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.7-flash": {
-      "requests_today": 8,
+      "requests_today": 9,
       "success_today": 0,
-      "errors_today": 8,
-      "last_used_utc": "2026-11-06T17:02:29.811042+00:00",
+      "errors_today": 9,
+      "last_used_utc": "2026-11-06T18:02:28.083567+00:00",
       "last_status": "exception",
       "last_mode": "fallback",
       "last_response_status": 503,
@@ -37,26 +37,26 @@
       "cooldown_until_utc": "2026-11-06T15:16:00.914648+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 8,
-      "success_today": 4,
+      "requests_today": 9,
+      "success_today": 5,
       "errors_today": 4,
-      "last_used_utc": "2026-11-06T17:02:37.960657+00:00",
-      "last_status": "http_error",
+      "last_used_utc": "2026-11-06T18:02:51.119563+00:00",
+      "last_status": "ok",
       "last_mode": "fallback",
-      "last_response_status": 503,
+      "last_response_status": 200,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-11-06T17:17:37.960667+00:00"
+      "cooldown_until_utc": ""
     },
     "gemini-3.8-flash": {
-      "requests_today": 7,
+      "requests_today": 8,
       "success_today": 0,
-      "errors_today": 7,
-      "last_used_utc": "2026-11-06T17:00:59.677833+00:00",
+      "errors_today": 8,
+      "last_used_utc": "2026-11-06T18:00:57.989681+00:00",
       "last_status": "http_error",
       "last_mode": "deep_primary",
       "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": "2026-11-06T17:15:59.677842+00:00"
+      "cooldown_until_utc": "2026-11-06T18:15:57.989690+00:00"
     }
   }
 }
