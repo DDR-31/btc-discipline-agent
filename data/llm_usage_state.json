@@ -48,11 +48,11 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.8-flash": {
-      "requests_today": 10,
-      "success_today": 3,
+      "requests_today": 11,
+      "success_today": 4,
       "errors_today": 7,
-      "last_used_utc": "2026-11-07T21:02:23.777891+00:00",
-      "last_status": "exception",
+      "last_used_utc": "2026-11-07T22:01:28.485891+00:00",
+      "last_status": "ok",
       "last_mode": "deep_primary",
       "last_response_status": 200,
       "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
