@@ -15,10 +15,10 @@
       "cooldown_until_utc": "2026-11-08T08:16:04.123951+00:00"
     },
     "gemini-3.7-flash": {
-      "requests_today": 1,
+      "requests_today": 2,
       "success_today": 0,
-      "errors_today": 1,
-      "last_used_utc": "2026-11-08T08:02:34.234231+00:00",
+      "errors_today": 2,
+      "last_used_utc": "2026-11-08T10:03:54.242771+00:00",
       "last_status": "exception",
       "last_mode": "fallback",
       "last_response_status": "",
@@ -26,10 +26,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.5-flash": {
-      "requests_today": 1,
-      "success_today": 1,
+      "requests_today": 2,
+      "success_today": 2,
       "errors_today": 0,
-      "last_used_utc": "2026-11-08T08:02:42.345602+00:00",
+      "last_used_utc": "2026-11-08T10:03:59.179903+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
@@ -37,14 +37,14 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.8-flash": {
-      "requests_today": 1,
+      "requests_today": 2,
       "success_today": 1,
-      "errors_today": 0,
-      "last_used_utc": "2026-11-08T09:01:31.777558+00:00",
-      "last_status": "ok",
+      "errors_today": 1,
+      "last_used_utc": "2026-11-08T10:02:24.143227+00:00",
+      "last_status": "exception",
       "last_mode": "deep_primary",
       "last_response_status": 200,
-      "last_error": "",
+      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
       "cooldown_until_utc": ""
     }
   }
