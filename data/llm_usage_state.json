@@ -4,10 +4,10 @@
   "last_grounding_bucket_utc": "2026-11-11T08:00Z",
   "models": {
     "gemini-2.5-flash": {
-      "requests_today": 14,
-      "success_today": 9,
+      "requests_today": 15,
+      "success_today": 10,
       "errors_today": 5,
-      "last_used_utc": "2026-11-11T23:02:49.144630+00:00",
+      "last_used_utc": "2026-11-12T02:01:34.531382+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
@@ -26,37 +26,37 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.7-flash": {
-      "requests_today": 15,
+      "requests_today": 16,
       "success_today": 1,
-      "errors_today": 14,
-      "last_used_utc": "2026-11-12T01:02:24.245931+00:00",
+      "errors_today": 15,
+      "last_used_utc": "2026-11-12T02:01:14.538962+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
-      "last_response_status": 429,
-      "last_error": "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See",
-      "cooldown_until_utc": "2026-11-12T01:17:24.245943+00:00"
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-11-12T02:16:14.538973+00:00"
     },
     "gemini-3.8-flash": {
-      "requests_today": 14,
+      "requests_today": 15,
       "success_today": 0,
-      "errors_today": 14,
-      "last_used_utc": "2026-11-12T01:02:24.105358+00:00",
-      "last_status": "exception",
+      "errors_today": 15,
+      "last_used_utc": "2026-11-12T02:01:10.206511+00:00",
+      "last_status": "http_error",
       "last_mode": "deep_primary",
-      "last_response_status": 429,
-      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
-      "cooldown_until_utc": "2026-11-11T23:15:53.454728+00:00"
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-11-12T02:16:10.206523+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 14,
+      "requests_today": 15,
       "success_today": 8,
-      "errors_today": 6,
-      "last_used_utc": "2026-11-12T01:02:32.654927+00:00",
-      "last_status": "ok",
+      "errors_today": 7,
+      "last_used_utc": "2026-11-12T02:01:22.703320+00:00",
+      "last_status": "http_error",
       "last_mode": "fallback",
-      "last_response_status": 200,
+      "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": ""
+      "cooldown_until_utc": "2026-11-12T02:16:22.703332+00:00"
     }
   }
 }
