@@ -1,7 +1,7 @@
 symbol: BTC/USDT
 
 portfolio:
-  usdt: 171.49130262
+  usdt: 233.7715042
   btc: 0.00226512
   target_btc_min_pct: 50
   target_btc_max_pct: 75
@@ -9,7 +9,7 @@ portfolio:
   reserve_architecture:
     tier_1_hard_floor_usdt: 100
     tier_2_op_buffer_usdt: 15
-    tier_3_tactical_usdt: 56.49
+    tier_3_tactical_usdt: 118.77
 
 mental:
   state: calm
