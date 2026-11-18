@@ -4,21 +4,21 @@
   "last_grounding_bucket_utc": "2026-11-18T16:00Z",
   "models": {
     "gemini-2.5-flash": {
-      "requests_today": 17,
+      "requests_today": 18,
       "success_today": 4,
-      "errors_today": 13,
-      "last_used_utc": "2026-11-18T21:01:23.542315+00:00",
-      "last_status": "ok",
+      "errors_today": 14,
+      "last_used_utc": "2026-11-18T23:02:43.272947+00:00",
+      "last_status": "http_error",
       "last_mode": "fallback",
-      "last_response_status": 200,
+      "last_response_status": 503,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
-      "cooldown_until_utc": ""
+      "cooldown_until_utc": "2026-11-18T23:17:43.272959+00:00"
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 10,
-      "success_today": 10,
+      "requests_today": 11,
+      "success_today": 11,
       "errors_today": 0,
-      "last_used_utc": "2026-11-18T20:02:51.258076+00:00",
+      "last_used_utc": "2026-11-18T23:02:45.213910+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
@@ -26,36 +26,36 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.7-flash": {
-      "requests_today": 15,
+      "requests_today": 16,
       "success_today": 1,
-      "errors_today": 14,
-      "last_used_utc": "2026-11-18T22:04:01.820183+00:00",
-      "last_status": "exception",
+      "errors_today": 15,
+      "last_used_utc": "2026-11-18T23:01:11.937622+00:00",
+      "last_status": "http_error",
       "last_mode": "fallback",
       "last_response_status": 503,
-      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
-      "cooldown_until_utc": "2026-11-18T21:16:06.677779+00:00"
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-11-18T23:16:11.937633+00:00"
     },
     "gemini-3.8-flash": {
-      "requests_today": 12,
+      "requests_today": 13,
       "success_today": 0,
-      "errors_today": 12,
-      "last_used_utc": "2026-11-18T22:02:31.709337+00:00",
-      "last_status": "exception",
+      "errors_today": 13,
+      "last_used_utc": "2026-11-18T23:01:01.753763+00:00",
+      "last_status": "http_error",
       "last_mode": "deep_primary",
-      "last_response_status": 429,
-      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
-      "cooldown_until_utc": "2026-11-18T21:16:01.704513+00:00"
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-11-18T23:16:01.753774+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 14,
+      "requests_today": 15,
       "success_today": 3,
-      "errors_today": 11,
-      "last_used_utc": "2026-11-18T22:04:11.359089+00:00",
-      "last_status": "ok",
+      "errors_today": 12,
+      "last_used_utc": "2026-11-18T23:02:42.087318+00:00",
+      "last_status": "exception",
       "last_mode": "fallback",
       "last_response_status": 200,
-      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
       "cooldown_until_utc": ""
     }
   }
