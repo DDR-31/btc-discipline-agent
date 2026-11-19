@@ -15,12 +15,12 @@
       "cooldown_until_utc": "2026-11-19T06:16:03.796049+00:00"
     },
     "gemini-2.5-flash-lite": {
-      "requests_today": 12,
-      "success_today": 12,
+      "requests_today": 13,
+      "success_today": 13,
       "errors_today": 0,
-      "last_used_utc": "2026-11-19T06:01:05.640730+00:00",
+      "last_used_utc": "2026-11-19T07:01:00.914369+00:00",
       "last_status": "ok",
-      "last_mode": "fallback",
+      "last_mode": "quota_fallback",
       "last_response_status": 200,
       "last_error": "",
       "cooldown_until_utc": ""
