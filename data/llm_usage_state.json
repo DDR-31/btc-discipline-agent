@@ -37,12 +37,12 @@
       "cooldown_until_utc": "2026-11-21T06:15:56.617187+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 19,
-      "success_today": 15,
+      "requests_today": 20,
+      "success_today": 16,
       "errors_today": 4,
-      "last_used_utc": "2026-11-21T06:01:04.996313+00:00",
+      "last_used_utc": "2026-11-21T07:01:08.481191+00:00",
       "last_status": "ok",
-      "last_mode": "fallback",
+      "last_mode": "quota_fallback",
       "last_response_status": 200,
       "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
       "cooldown_until_utc": ""
