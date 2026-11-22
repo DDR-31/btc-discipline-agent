@@ -26,21 +26,21 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.7-flash": {
-      "requests_today": 15,
+      "requests_today": 16,
       "success_today": 2,
-      "errors_today": 13,
-      "last_used_utc": "2026-11-21T23:03:49.645537+00:00",
-      "last_status": "ok",
+      "errors_today": 14,
+      "last_used_utc": "2026-11-22T00:03:55.304707+00:00",
+      "last_status": "exception",
       "last_mode": "fallback",
       "last_response_status": 200,
       "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
       "cooldown_until_utc": ""
     },
     "gemini-3.5-flash": {
-      "requests_today": 13,
-      "success_today": 8,
+      "requests_today": 14,
+      "success_today": 9,
       "errors_today": 5,
-      "last_used_utc": "2026-11-21T20:04:03.075699+00:00",
+      "last_used_utc": "2026-11-22T00:04:05.012389+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
@@ -48,10 +48,10 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.8-flash": {
-      "requests_today": 12,
+      "requests_today": 13,
       "success_today": 1,
-      "errors_today": 11,
-      "last_used_utc": "2026-11-21T23:02:26.967727+00:00",
+      "errors_today": 12,
+      "last_used_utc": "2026-11-22T00:02:25.248733+00:00",
       "last_status": "exception",
       "last_mode": "deep_primary",
       "last_response_status": 200,
