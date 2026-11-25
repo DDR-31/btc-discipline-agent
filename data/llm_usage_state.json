@@ -15,32 +15,32 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.8-flash": {
-      "requests_today": 18,
+      "requests_today": 19,
       "success_today": 0,
-      "errors_today": 18,
-      "last_used_utc": "2026-11-25T05:00:49.508100+00:00",
+      "errors_today": 19,
+      "last_used_utc": "2026-11-25T06:00:58.542156+00:00",
       "last_status": "http_error",
       "last_mode": "deep_primary",
-      "last_response_status": 429,
-      "last_error": "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See",
-      "cooldown_until_utc": "2026-11-25T05:15:49.508110+00:00"
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-11-25T06:15:58.542167+00:00"
     },
     "gemini-3.7-flash": {
-      "requests_today": 19,
+      "requests_today": 20,
       "success_today": 1,
-      "errors_today": 18,
-      "last_used_utc": "2026-11-25T05:00:49.625609+00:00",
+      "errors_today": 19,
+      "last_used_utc": "2026-11-25T06:01:04.104722+00:00",
       "last_status": "http_error",
       "last_mode": "fallback",
-      "last_response_status": 429,
-      "last_error": "{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See",
-      "cooldown_until_utc": "2026-11-25T05:15:49.625618+00:00"
+      "last_response_status": 503,
+      "last_error": "{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n",
+      "cooldown_until_utc": "2026-11-25T06:16:04.104735+00:00"
     },
     "gemini-3.5-flash": {
-      "requests_today": 18,
-      "success_today": 11,
+      "requests_today": 19,
+      "success_today": 12,
       "errors_today": 7,
-      "last_used_utc": "2026-11-25T05:00:59.684953+00:00",
+      "last_used_utc": "2026-11-25T06:01:10.839759+00:00",
       "last_status": "ok",
       "last_mode": "fallback",
       "last_response_status": 200,
