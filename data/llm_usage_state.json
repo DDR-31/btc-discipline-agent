@@ -48,15 +48,15 @@
       "cooldown_until_utc": ""
     },
     "gemini-3.8-flash": {
-      "requests_today": 14,
-      "success_today": 2,
+      "requests_today": 15,
+      "success_today": 3,
       "errors_today": 12,
-      "last_used_utc": "2026-11-28T01:02:28.071831+00:00",
-      "last_status": "exception",
+      "last_used_utc": "2026-11-28T02:02:10.738903+00:00",
+      "last_status": "ok",
       "last_mode": "deep_primary",
-      "last_response_status": 503,
+      "last_response_status": 200,
       "last_error": "HTTPSConnectionPool(host='generativelanguage.googleapis.com', port=443): Read timed out. (read timeout=90)",
-      "cooldown_until_utc": "2026-11-28T00:16:04.659120+00:00"
+      "cooldown_until_utc": ""
     }
   }
 }
